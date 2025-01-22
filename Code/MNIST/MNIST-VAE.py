@@ -26,11 +26,11 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 #X_valid = X_valid[:1000]
 #Y_valid = Y_valid[:1000]
 
-num_epochs = 8
+num_epochs = 2
 
 img_shape = (28, 28, 1)
 batch_size = 16
-latent_dim = 8
+latent_dim = 32
 
 input_img = Input(shape=img_shape)
 
@@ -47,7 +47,7 @@ x = ReLU()(x)
 shape_before_flattening = K.int_shape(x)
 
 x = Flatten()(x)
-x = Dense(32)(x)
+x = Dense(128)(x)
 x = ReLU()(x)
 
 z_mu = Dense(latent_dim)(x)
@@ -62,6 +62,9 @@ z = Lambda(sampling)([z_mu, z_log_sigma])
 
 # Decoder
 decoder_input = Input(K.int_shape(z)[1:])
+
+#x = Dense(128)(x)
+#x = ReLU()(x)
 
 x = Dense(np.prod(shape_before_flattening[1:]))(decoder_input)
 x = ReLU()(x)
@@ -100,8 +103,12 @@ class CustomVariationalLayer(keras.layers.Layer):
 y = CustomVariationalLayer()([input_img, z_decoded, z_mu, z_log_sigma])
 
 vae = Model(input_img, y)
-vae.compile(optimizer="rmsprop", loss=None)
+vae.compile(optimizer = "rmsprop", loss = None)
 vae.summary()
+
+# Fitting
+
+print("Fitting model...")
 
 vae.fit(x = X_train, y = None, shuffle = True, epochs = num_epochs, batch_size = batch_size, validation_data = (X_valid, None))
 
@@ -109,6 +116,8 @@ encoder = Model(input_img, z_mu)
 X_valid_encoded = encoder.predict(X_valid, batch_size = batch_size)
 
 # t-SNE
+
+print("Calculating t-SNE axis projection...")
 
 tsne = TSNE(n_components = 2, random_state = 42, max_iter = 1000)
 X_valid_encoded_tSNE = tsne.fit_transform(X_valid_encoded)
@@ -126,18 +135,39 @@ for i in range(10):
     )
 
 plt.legend()
-plt.title("t-SNE (latent)")
+plt.title("latent t-SNE (axis representation)")
 plt.tight_layout()
-plt.savefig("./Results/mnist_tsne_latent_space.png")
+plt.savefig("./Results/mnist_tsne_latent.png")
+
+# t-SNE grid
+
+"""print("Calculating t-SNE grid projection...")
+
+grid_x = np.linspace(X_valid_encoded_tSNE[:, 0].min(), X_valid_encoded_tSNE[:, 0].max(), 10)
+grid_y = np.linspace(X_valid_encoded_tSNE[:, 1].min(), X_valid_encoded_tSNE[:, 1].max(), 10)
+grid_latents = np.array([[x, y] for x in grid_x for y in grid_y])
+
+generated_images = decoder.predict(grid_latents)
+
+fig, axes = plt.subplots(10, 10, figsize = (10, 10))
+for i, ax in enumerate(axes.flat):
+    ax.imshow(generated_images[i].reshape(28, 28))
+    ax.axis('off')
+
+plt.title("latent t-SNE (grid representation)")
+plt.tight_layout()
+plt.savefig("./Results/mnist_tsne_latent_grid.png")"""
 
 # Average
+
+print("Calculating average digits...")
 
 means = [None] * 10
 fig, axes = plt.subplots(1, 10, figsize=(10, 1))
 for i in range(10):
     means[i] = np.mean(X_valid_encoded[Y_valid == i], axis = 0).reshape(1, -1)
 
-    X_decoded = decoder.predict(means[i], batch_size=batch_size)
+    X_decoded = decoder.predict(means[i], batch_size = batch_size)
 
     axes[i].imshow(X_decoded[0])
     axes[i].set_title(str(i))
@@ -148,11 +178,14 @@ plt.savefig("./Results/mnist_average.png")
 
 # Translation
 
+print("Calculating translation map...")
+
 fig, axes = plt.subplots(10, 10, figsize=(15, 15))
 for i in range(10):
     for j in range(10):
         selected_data = X_valid_encoded[Y_valid == i][0]
-        X_decoded = decoder.predict(selected_data + means[j] - means[i], batch_size=batch_size)
+        selected_data = np.expand_dims(selected_data, axis=0)
+        X_decoded = decoder.predict(selected_data + means[j] - means[i], batch_size = batch_size)
         
         ax = axes[i, j]
         ax.imshow(X_decoded[0].reshape(28, 28))
