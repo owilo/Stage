@@ -122,5 +122,5 @@ for li in range(len(latent_dims)):
 
     X_decoded[li] = decoder[li].predict(X_valid_encoded[li], batch_size = batch_size)
 
-    encoder.save("./Models/mnist-" + str(latent_dim) + "-encoder.keras")
-    decoder[li].save("./Models/mnist-" + str(latent_dim) + "-decoder.keras")
+    encoder.save("./Models/VAE/mnist-" + str(latent_dim) + "-encoder.keras")
+    decoder[li].save("./Models/VAE/mnist-" + str(latent_dim) + "-decoder.keras")
