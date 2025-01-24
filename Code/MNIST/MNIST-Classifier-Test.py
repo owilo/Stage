@@ -4,7 +4,7 @@ from keras.models import load_model
 from keras.datasets import mnist
 from sklearn.metrics import precision_score
 
-model = load_model("./Models/Classifieur/original_capsnet_MNIST.h5")
+model = load_model("./Models/Classifieur/classifier.keras")
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 

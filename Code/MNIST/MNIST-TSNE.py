@@ -20,7 +20,7 @@ Y = pd.DataFrame(y_train)
 df = X
 
 # t-sne
-tsne = TSNE(max_iter=300)
+tsne = TSNE(max_iter = 300)
 tsne_results = tsne.fit_transform(X.values)
 
 df["label"] = Y
