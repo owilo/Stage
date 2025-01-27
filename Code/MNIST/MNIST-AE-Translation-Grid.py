@@ -1,10 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 
 import os
-
-from sklearn.manifold import TSNE
 
 from keras.datasets import mnist
 
@@ -40,11 +37,7 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 X_eval = np.concatenate((X_train, X_valid))
 Y_eval = np.concatenate((Y_train, Y_valid))
 
-src_digit = 61256
-src_class = Y_eval[src_digit]
-dst_class = 9
-
-ae_type = "VAE"
+ae_type = "AE"
 
 batch_size = 16
 latent_dim = 8
@@ -79,6 +72,7 @@ plt.savefig("./Results/mnist-translation-digits.png")
 encoded_means = [None] * 10
 for i in range(10):
     encoded_means[i] = np.mean(X_encoded_all[Y_eval == i], axis = 0)
+    encoded_means[i] = np.expand_dims(encoded_means[i], axis = 0)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 
@@ -91,10 +85,13 @@ for src_class in range(10):
         mean_encoded_src = encoded_means[src_class]
         mean_encoded_dst = encoded_means[dst_class]
 
+        #mean_encoded_src = mean_encoded_src / np.linalg.norm(mean_encoded_src, axis=0, keepdims=True)
+        #mean_encoded_dst = mean_encoded_dst / np.linalg.norm(mean_encoded_dst, axis=0, keepdims=True)
+
         translation = mean_encoded_dst - mean_encoded_src
         translated = X_encoded + translation
 
-        decoded = decoder.predict(translated, batch_size=batch_size)
+        decoded = decoder.predict(translated, batch_size = batch_size)
 
         ax = axes[src_class, dst_class]
         ax.imshow(decoded[0].reshape(28, 28))

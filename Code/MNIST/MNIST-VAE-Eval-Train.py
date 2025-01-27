@@ -1,8 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import colormaps
-
-import math
 
 from sklearn.manifold import TSNE
 from skimage.metrics import peak_signal_noise_ratio as psnr
@@ -32,7 +28,7 @@ num_epochs = 6
 img_shape = (28, 28, 1)
 batch_size = 16
 
-latent_dims = [8, 32, 64, 128]
+latent_dims = [2]
 
 X_valid_encoded = [None] * len(latent_dims)
 X_decoded = [None] * len(latent_dims)

@@ -237,6 +237,17 @@ for i in range(len(latent_dims)):
 with open("./Results/Model-Eval/" + ae_type + "/mnist-eval-metrics.csv", 'w') as f:
     f.write(output)
 
+output = "classe," + ",".join(map(str, latent_dims)) + "\n"
+
+for i in range(10):
+    stds = [0.0] * len(latent_dims)
+    for j in range(len(latent_dims)):
+        stds[j] = np.std(X_eval_encoded[j][Y_eval == i], axis = 0).mean()
+    output += str(i) + "," + ",".join(map(str, stds)) + "\n"
+
+with open("./Results/Model-Eval/" + ae_type + "/mnist-eval-std.csv", 'w') as f:
+    f.write(output)
+
 # t-SNE
 
 plt.close("all")
