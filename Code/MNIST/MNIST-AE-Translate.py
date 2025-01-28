@@ -44,7 +44,7 @@ src_digit = 61256
 src_class = Y_eval[src_digit]
 dst_class = 9
 
-ae_type = "VAE"
+ae_type = "AE"
 
 batch_size = 16
 latent_dim = 8
@@ -80,14 +80,31 @@ plt.title("Décodé")
 plt.tight_layout()
 plt.savefig("./Results/mnist-translation-decoded.png")
 
+fig, axes = plt.subplots(1, 11, figsize=(22, 2))
+for i in range(11):
+    l = i * 0.1
+    v = X_encoded * (1.0 - l) + translated * l
+    d = decoder.predict(v)
+    ax = axes[i]
+    ax.imshow(d[0].reshape(28, 28))
+    ax.axis('off')
+
+plt.tight_layout()
+plt.savefig("./Results/mnist-translation-interpolation.png")
+
 tsne = TSNE(n_components = 2, random_state = 1337, max_iter = 300)
-X_eval_encoded_tSNE = cache_array(f"{ae_type}-encoded-tsne-{latent_dim}.npy", lambda: tsne.fit_transform(X_encoded_all))
+
+X_with_translation = np.concatenate((X_encoded_all, translated))
+
+X_eval_encoded_tSNE_with_translation = cache_array(f"{ae_type}-encoded-translated-tsne-{latent_dim}.npy", lambda: tsne.fit_transform(X_with_translation))
+X_eval_encoded_tSNE = X_eval_encoded_tSNE_with_translation[:-1]
+tsne_translated_digit = X_eval_encoded_tSNE_with_translation[-1]
 
 tsne_src_digit = X_eval_encoded_tSNE[src_digit]
 tsne_class1_centroid = X_eval_encoded_tSNE[Y_eval == src_class].mean(axis=0)
 tsne_class2_centroid = X_eval_encoded_tSNE[Y_eval == dst_class].mean(axis=0)
 
-tsne_translated_digit = tsne_src_digit + (tsne_class2_centroid - tsne_class1_centroid)
+#tsne_translated_digit = tsne_src_digit + (tsne_class2_centroid - tsne_class1_centroid)
 
 plt.figure(figsize=(8, 8))
 
