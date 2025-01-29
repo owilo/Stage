@@ -28,7 +28,7 @@ num_epochs = 6
 img_shape = (28, 28, 1)
 batch_size = 16
 
-latent_dims = [2]
+latent_dims = [2, 8, 32, 64]
 
 X_valid_encoded = [None] * len(latent_dims)
 X_decoded = [None] * len(latent_dims)
@@ -95,7 +95,7 @@ for li in range(len(latent_dims)):
             z_decoded = K.flatten(z_decoded)
             xent_loss = keras.metrics.binary_crossentropy(x, z_decoded)
             kl_loss = -5e-4 * K.mean(1 + z_log_sigma - K.square(z_mu) - K.exp(z_log_sigma), axis=-1)
-            return K.mean(xent_loss + kl_loss)
+            return K.mean(xent_loss + 8.0 * kl_loss)
 
         def call(self, inputs):
             x, z_decoded, z_mu, z_log_sigma = inputs

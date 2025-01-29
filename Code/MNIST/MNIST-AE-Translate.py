@@ -44,18 +44,21 @@ src_digit = 61256
 src_class = Y_eval[src_digit]
 dst_class = 9
 
-ae_type = "AE"
+ae_type = "VAE"
 
 batch_size = 16
-latent_dim = 8
+latent_dim = 128
 
 encoder = load_model(f"./Models/{ae_type}/mnist-{latent_dim}-encoder.keras")
 decoder = load_model(f"./Models/{ae_type}/mnist-{latent_dim}-decoder.keras")
 
 X_encoded_all = cache_array(f"{ae_type}-encoded-{latent_dim}.npy", lambda: encoder.predict(X_eval, batch_size = batch_size))
-X_encoded = X_encoded_all[src_digit:src_digit + 1]
-X_encoded_class_src = X_encoded_all[Y_eval == src_class]
-X_encoded_class_dst = X_encoded_all[Y_eval == dst_class]
+X_decoded_all = cache_array(f"{ae_type}-decoded-{latent_dim}.npy", lambda: decoder.predict(X_encoded_all, batch_size = batch_size))
+X_reencoded_all = cache_array(f"{ae_type}-reencoded-{latent_dim}.npy", lambda: encoder.predict(X_decoded_all, batch_size = batch_size))
+
+X_encoded = X_reencoded_all[src_digit:src_digit + 1]
+X_encoded_class_src = X_reencoded_all[Y_eval == src_class]
+X_encoded_class_dst = X_reencoded_all[Y_eval == dst_class]
 
 mean_encoded_src = np.mean(X_encoded_class_src, axis=0)
 mean_encoded_dst = np.mean(X_encoded_class_dst, axis=0)
@@ -94,17 +97,15 @@ plt.savefig("./Results/mnist-translation-interpolation.png")
 
 tsne = TSNE(n_components = 2, random_state = 1337, max_iter = 300)
 
-X_with_translation = np.concatenate((X_encoded_all, translated))
+X_with_translation = np.concatenate((X_reencoded_all, translated, np.expand_dims(mean_encoded_src, 0), np.expand_dims(mean_encoded_dst, 0)))
 
 X_eval_encoded_tSNE_with_translation = cache_array(f"{ae_type}-encoded-translated-tsne-{latent_dim}.npy", lambda: tsne.fit_transform(X_with_translation))
-X_eval_encoded_tSNE = X_eval_encoded_tSNE_with_translation[:-1]
-tsne_translated_digit = X_eval_encoded_tSNE_with_translation[-1]
+X_eval_encoded_tSNE = X_eval_encoded_tSNE_with_translation[:-3]
+tsne_translated_digit = X_eval_encoded_tSNE_with_translation[-3]
+tsne_class1_centroid = X_eval_encoded_tSNE_with_translation[-2]
+tsne_class2_centroid = X_eval_encoded_tSNE_with_translation[-1]
 
-tsne_src_digit = X_eval_encoded_tSNE[src_digit]
-tsne_class1_centroid = X_eval_encoded_tSNE[Y_eval == src_class].mean(axis=0)
-tsne_class2_centroid = X_eval_encoded_tSNE[Y_eval == dst_class].mean(axis=0)
-
-#tsne_translated_digit = tsne_src_digit + (tsne_class2_centroid - tsne_class1_centroid)
+tsne_src_digit = X_eval_encoded_tSNE_with_translation[src_digit]
 
 plt.figure(figsize=(8, 8))
 

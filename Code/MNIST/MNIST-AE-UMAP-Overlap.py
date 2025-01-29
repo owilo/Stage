@@ -44,7 +44,7 @@ ae_type = "AE"
 batch_size = 16
 latent_dims = [8, 32, 64, 128]
 
-digit = 1
+digit = 9
 
 umap = UMAP(n_components=2, random_state=1337)
 plt.figure(figsize=(10, 8))

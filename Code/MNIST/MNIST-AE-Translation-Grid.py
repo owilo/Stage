@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 
 import os
+
+from sklearn.manifold import TSNE
 
 from keras.datasets import mnist
 
@@ -37,15 +40,21 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 X_eval = np.concatenate((X_train, X_valid))
 Y_eval = np.concatenate((Y_train, Y_valid))
 
-ae_type = "AE"
+src_digit = 61256
+src_class = Y_eval[src_digit]
+dst_class = 9
+
+ae_type = "VAE"
 
 batch_size = 16
-latent_dim = 8
+latent_dim = 128
 
 encoder = load_model(f"./Models/{ae_type}/mnist-{latent_dim}-encoder.keras")
 decoder = load_model(f"./Models/{ae_type}/mnist-{latent_dim}-decoder.keras")
 
 X_encoded_all = cache_array(f"{ae_type}-encoded-{latent_dim}.npy", lambda: encoder.predict(X_eval, batch_size = batch_size))
+X_decoded_all = cache_array(f"{ae_type}-decoded-{latent_dim}.npy", lambda: decoder.predict(X_encoded_all, batch_size = batch_size))
+X_reencoded_all = cache_array(f"{ae_type}-reencoded-{latent_dim}.npy", lambda: encoder.predict(X_decoded_all, batch_size = batch_size))
 
 digits = [
     61333, # 0
@@ -71,7 +80,7 @@ plt.savefig("./Results/mnist-translation-digits.png")
 
 encoded_means = [None] * 10
 for i in range(10):
-    encoded_means[i] = np.mean(X_encoded_all[Y_eval == i], axis = 0)
+    encoded_means[i] = np.mean(X_reencoded_all[Y_eval == i], axis = 0)
     encoded_means[i] = np.expand_dims(encoded_means[i], axis = 0)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
@@ -80,13 +89,10 @@ for src_class in range(10):
     src_digit = digits[src_class]
 
     for dst_class in range(10):
-        X_encoded = X_encoded_all[src_digit:src_digit + 1]
+        X_encoded = X_reencoded_all[src_digit:src_digit + 1]
 
         mean_encoded_src = encoded_means[src_class]
         mean_encoded_dst = encoded_means[dst_class]
-
-        #mean_encoded_src = mean_encoded_src / np.linalg.norm(mean_encoded_src, axis=0, keepdims=True)
-        #mean_encoded_dst = mean_encoded_dst / np.linalg.norm(mean_encoded_dst, axis=0, keepdims=True)
 
         translation = mean_encoded_dst - mean_encoded_src
         translated = X_encoded + translation
