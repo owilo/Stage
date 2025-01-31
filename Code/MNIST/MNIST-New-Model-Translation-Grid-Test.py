@@ -83,6 +83,8 @@ for i in range(10):
 plt.tight_layout()
 plt.savefig("./Results/mnist-translation-digits.png")"""
 
+classifier = load_model("./Models/Classifieur/classifier.keras")
+
 encoded_means = [None] * 10
 for i in range(10):
     encoded_means[i] = np.mean(X_reencoded_all[Y_valid == i], axis = 0)
@@ -103,10 +105,16 @@ for src_class in range(10):
         translated = X_encoded + translation
 
         decoded = decoder.predict(translated, batch_size = batch_size)
+        decoded = tf.image.resize(decoded, (28, 28)).numpy()
+
+        Y_pred_proba = classifier.predict(decoded, verbose = False)
+
+        guessed_class = np.argmax(Y_pred_proba)
+        certainty = np.max(Y_pred_proba)
 
         ax = axes[src_class, dst_class]
-        decoded = tf.image.resize(decoded, (28, 28))
-        ax.imshow(decoded.numpy()[0].reshape(28, 28))
+        ax.imshow(decoded[0].reshape(28, 28), cmap="gray")
+        ax.text(0.5, -0.15, f"({guessed_class}, {certainty:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
         ax.axis('off')
 
 plt.tight_layout()

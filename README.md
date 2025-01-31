@@ -3,4 +3,4 @@
 ## Structure
 - **Code** : Contient les programmes et scripts.
 - **Compte-Rendus** : Contient les compte-rendus hebdomadaires.
-- **Documents** : Contient des documents divers.
+- **Documents** : Contient les sources et d'autres documents divers.
