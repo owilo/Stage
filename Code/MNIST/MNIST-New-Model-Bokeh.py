@@ -49,19 +49,21 @@ source = ColumnDataSource(data=dict(
     y=X_tSNE[:, 1],
     image=image_base64,
     label=Y_valid,
-    index=indices
+    index=indices,
+    classes=Y_valid
 ))
 
 mapper = linear_cmap(field_name='label', palette=Viridis256, low=min(Y_valid), high=max(Y_valid))
 
-p = figure(title="t-SNE Projection of Latent Vectors", tools="pan,wheel_zoom,box_zoom,reset")
+p = figure(title="t-SNE", tools="pan,wheel_zoom,box_zoom,reset")
 
-p.scatter('x', 'y', size=5, source=source, fill_color=mapper, line_color=None)
+p.scatter('x', 'y', size=5, source=source, fill_color=mapper, line_color=None, fill_alpha = 0.35)
 
 hover = HoverTool(tooltips=""" 
-    <div>
-        <img src='@image' style='float: left; margin: 5px 5px 5px 5px'/>
-        <div><strong>Index: </strong>@index</div>
+    <div style="display: flex; align-items: center; flex-direction: column;">
+        <img src="@image" style="width: 50px; height: 50px;"/>
+        <div><strong>Index : </strong>@index</div>
+        <div><strong>Classe : </strong>@classes</div>
     </div>
 """)
 p.add_tools(hover)

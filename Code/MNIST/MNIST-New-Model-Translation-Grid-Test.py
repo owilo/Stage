@@ -41,11 +41,8 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 X_train = tf.image.resize(X_train, (64, 64))
 X_valid = tf.image.resize(X_valid, (64, 64))
 
-X_eval = np.concatenate((X_train, X_valid))
-Y_eval = np.concatenate((Y_train, Y_valid))
-
-src_digit = 61256
-src_class = Y_eval[src_digit]
+src_digit = 1256
+src_class = Y_valid[src_digit]
 dst_class = 9
 
 ae_type = "VAE"
@@ -60,21 +57,21 @@ decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 X_decoded_all = cache_array(f"{ae_type}-decoded-{latent_dim}-dis2.npy", lambda: decoder.predict(X_encoded_all, batch_size = batch_size))
 X_reencoded_all = cache_array(f"{ae_type}-reencoded-{latent_dim}-dis.npy", lambda: encoder.predict(X_decoded_all, batch_size = batch_size))"""
 
-"""X_encoded_all = encoder.predict(X_eval, batch_size = batch_size)
+X_encoded_all = encoder.predict(X_valid, batch_size = batch_size)
 X_decoded_all = decoder.predict(X_encoded_all, batch_size = batch_size)
-X_reencoded_all = encoder.predict(X_decoded_all, batch_size = batch_size)"""
+X_reencoded_all = encoder.predict(X_decoded_all, batch_size = batch_size)
 
 digits = [
-    61333, # 0
-    69415, # 1
-    63773, # 2
-    60524, # 3
-    61980, # 4
-    61874, # 5
-    64252, # 6
-    66960, # 7
-    68466, # 8
-    65333  # 9
+    1333, # 0
+    9415, # 1
+    3773, # 2
+    524, # 3
+    1980, # 4
+    1874, # 5
+    4252, # 6
+    6960, # 7
+    8466, # 8
+    5333  # 9
 ]
 
 """fig, axes = plt.subplots(1, 10, figsize=(20, 2))
@@ -88,7 +85,7 @@ plt.savefig("./Results/mnist-translation-digits.png")"""
 
 encoded_means = [None] * 10
 for i in range(10):
-    encoded_means[i] = np.mean(X_reencoded_all[Y_eval == i], axis = 0)
+    encoded_means[i] = np.mean(X_reencoded_all[Y_valid == i], axis = 0)
     encoded_means[i] = np.expand_dims(encoded_means[i], axis = 0)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
