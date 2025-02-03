@@ -98,7 +98,7 @@ for src_class in range(10):
             decoded = decoder.predict(translated, batch_size = batch_size)
 
             reencoded = encoder.predict(decoded, batch_size = batch_size)
-            
+
             invTranslated = reencoded - translation
 
             redecoded = decoder.predict(invTranslated, batch_size = batch_size)

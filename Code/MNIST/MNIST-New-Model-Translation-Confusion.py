@@ -42,8 +42,12 @@ for i in range(10):
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
 
-certainties = []
+total_conf_matrix = np.zeros((10, 10), dtype=int)
+
+total_certainties = []
 for src_class in range(10):
+    certainties = []
+
     plt.figure(figsize=(10, 8))
     conf_matrix = np.zeros((10, 10), dtype=int)
 
@@ -64,19 +68,37 @@ for src_class in range(10):
 
         certainty = np.max(Y_pred_proba, axis=1)
         certainties.extend(certainty.tolist())
+        total_certainties.extend(certainty.tolist())
 
         for guessed_class in guessed_classes:
             conf_matrix[dst_class, guessed_class] += 1
+
+    total_conf_matrix += conf_matrix
 
     accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
     average_certainty = np.mean(certainties)
     
     plt.suptitle(f"Classe source {src_class}", fontsize=22)
     plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+
+    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="BuPu")
     plt.xlabel("Classe prédite")
     plt.ylabel("Classe cible")
 
-    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="BuPu")
-
     plt.tight_layout()
     plt.savefig(f"./Results/TranslationConfusion/mnist-translation-confusion-{src_class}.png")
+
+
+accuracy = np.trace(total_conf_matrix) / np.sum(total_conf_matrix)
+average_certainty = np.mean(total_certainties)
+
+plt.figure(figsize=(10, 8))
+plt.suptitle("Toutes classes source", fontsize=22)
+plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+
+sns.heatmap(total_conf_matrix, annot=True, fmt="d", cmap="BuPu")
+plt.xlabel("Classe prédite")
+plt.ylabel("Classe cible")
+
+plt.tight_layout()
+plt.savefig(f"./Results/TranslationConfusion/mnist-translation-confusion-all.png")

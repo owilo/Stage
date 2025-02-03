@@ -68,6 +68,6 @@ hover = HoverTool(tooltips="""
 """)
 p.add_tools(hover)
 
-output_file("mnist_bokeh.html")
+output_file("./Bokeh/mnist_bokeh.html")
 
 show(p)
