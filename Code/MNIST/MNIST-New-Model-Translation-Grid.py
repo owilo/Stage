@@ -12,21 +12,6 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-def cache_array(filename, array_generator, save_cache=True, verbose=True):
-    file_path = os.path.join("./Cache", filename)
-
-    if os.path.exists(file_path):
-        if (verbose):
-            print(f"Chargement des données depuis {filename}")
-        return np.load(file_path)
-    else:
-        array = array_generator()
-        if (save_cache):
-            if (verbose):
-                print(f"Sauvegarde des données dans {filename}")
-            np.save(file_path, array)
-        return array
-
 K.clear_session()
 np.random.seed(42)
 
@@ -41,25 +26,18 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 X_train = tf.image.resize(X_train, (64, 64))
 X_valid = tf.image.resize(X_valid, (64, 64))
 
-src_digit = 1256
-src_class = Y_valid[src_digit]
-dst_class = 9
-
-ae_type = "VAE"
-
-batch_size = 16
-latent_dim = 64
+batch_size = 32
 
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 
-"""X_encoded_all = cache_array(f"{ae_type}-encoded-{latent_dim}-dis2.npy", lambda: encoder.predict(X_eval, batch_size = batch_size))
-X_decoded_all = cache_array(f"{ae_type}-decoded-{latent_dim}-dis2.npy", lambda: decoder.predict(X_encoded_all, batch_size = batch_size))
-X_reencoded_all = cache_array(f"{ae_type}-reencoded-{latent_dim}-dis.npy", lambda: encoder.predict(X_decoded_all, batch_size = batch_size))"""
+X_encoded_train = encoder.predict(X_train, batch_size = batch_size)
+X_decoded_train = decoder.predict(X_encoded_train, batch_size = batch_size)
+X_reencoded_train = encoder.predict(X_decoded_train, batch_size = batch_size)
 
-X_encoded_all = encoder.predict(X_valid, batch_size = batch_size)
-X_decoded_all = decoder.predict(X_encoded_all, batch_size = batch_size)
-X_reencoded_all = encoder.predict(X_decoded_all, batch_size = batch_size)
+X_encoded_valid = encoder.predict(X_valid, batch_size = batch_size)
+X_decoded_valid = decoder.predict(X_encoded_valid, batch_size = batch_size)
+X_reencoded_valid = encoder.predict(X_decoded_valid, batch_size = batch_size)
 
 digits = [
     1333, # 0
@@ -87,7 +65,7 @@ classifier = load_model("./Models/Classifieur/classifier.keras")
 
 encoded_means = [None] * 10
 for i in range(10):
-    encoded_means[i] = np.mean(X_reencoded_all[Y_valid == i], axis = 0)
+    encoded_means[i] = np.mean(X_reencoded_train[Y_train == i], axis = 0)
     encoded_means[i] = np.expand_dims(encoded_means[i], axis = 0)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
@@ -96,7 +74,7 @@ for src_class in range(10):
     src_digit = digits[src_class]
 
     for dst_class in range(10):
-        X_encoded = X_reencoded_all[src_digit:src_digit + 1]
+        X_encoded = X_reencoded_valid[src_digit:src_digit + 1]
 
         mean_encoded_src = encoded_means[src_class]
         mean_encoded_dst = encoded_means[dst_class]

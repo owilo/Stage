@@ -22,7 +22,7 @@ X_valid = X_valid.reshape(-1, 28, 28, 1)
 X_train = tf.image.resize(X_train, (64, 64))
 X_valid = tf.image.resize(X_valid, (64, 64))
 
-batch_size = 16
+batch_size = 32
 
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
@@ -44,11 +44,11 @@ classifier = load_model("./Models/Classifieur/classifier.keras")
 
 certainties = []
 for src_class in range(10):
-    plt.figure()
+    plt.figure(figsize=(10, 8))
     conf_matrix = np.zeros((10, 10), dtype=int)
 
     digits = X_reencoded_valid[Y_valid == src_class]
-    
+
     mean_encoded_src = encoded_means[src_class]
     for dst_class in range(10):
         mean_encoded_dst = encoded_means[dst_class]
@@ -71,8 +71,8 @@ for src_class in range(10):
     accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
     average_certainty = np.mean(certainties)
     
-    plt.suptitle(f"Classe source {src_class}", fontsize=18)
-    plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=10)
+    plt.suptitle(f"Classe source {src_class}", fontsize=22)
+    plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
     plt.xlabel("Classe prédite")
     plt.ylabel("Classe cible")
 
