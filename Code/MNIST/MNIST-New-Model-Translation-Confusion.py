@@ -63,7 +63,6 @@ for src_class in range(10):
         decoded = tf.image.resize(decoded, (28, 28)).numpy()
 
         Y_pred_proba = classifier.predict(decoded)
-
         guessed_classes = np.argmax(Y_pred_proba, axis=1)
 
         certainty = np.max(Y_pred_proba, axis=1)
@@ -75,19 +74,22 @@ for src_class in range(10):
 
     total_conf_matrix += conf_matrix
 
+    row_sums = conf_matrix.sum(axis=1, keepdims=True)
+    percentages = np.where(row_sums == 0, 0, conf_matrix / row_sums * 100)
+    
     accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
     average_certainty = np.mean(certainties)
-    
+
     plt.suptitle(f"Classe source {src_class}", fontsize=22)
     plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 
-    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="BuPu")
+    annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+    sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu")
     plt.xlabel("Classe prédite")
     plt.ylabel("Classe cible")
 
     plt.tight_layout()
     plt.savefig(f"./Results/TranslationConfusion/mnist-translation-confusion-{src_class}.png")
-
 
 accuracy = np.trace(total_conf_matrix) / np.sum(total_conf_matrix)
 average_certainty = np.mean(total_certainties)
@@ -96,7 +98,10 @@ plt.figure(figsize=(10, 8))
 plt.suptitle("Toutes classes source", fontsize=22)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 
-sns.heatmap(total_conf_matrix, annot=True, fmt="d", cmap="BuPu")
+row_sums_total = total_conf_matrix.sum(axis=1, keepdims=True)
+percentages_total = np.where(row_sums_total == 0, 0, total_conf_matrix / row_sums_total * 100)
+annot_total = np.array([["{:.2f}%".format(val) for val in row] for row in percentages_total])
+sns.heatmap(percentages_total, annot=annot_total, fmt="", cmap="BuPu")
 plt.xlabel("Classe prédite")
 plt.ylabel("Classe cible")
 

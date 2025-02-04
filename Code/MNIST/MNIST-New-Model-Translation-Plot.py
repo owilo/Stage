@@ -80,34 +80,73 @@ plt.title("2x Décodé")
 plt.tight_layout()
 plt.savefig(f"./Results/mnist-translation-decoded-{src_class}-{dst_class}.png")
 
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-axes = axes.ravel()
+fig, axes = plt.subplots(3, 2, figsize=(22, 18))
+axes = axes.flatten()
 
-axes[0].plot(mean_encoded_dst[0] - mean_encoded_src[0], color="gray", ls="--", lw=0.75, label=f"Différence (translation {src_class} → {dst_class})")
-axes[0].plot(mean_encoded_src[0], color="red", lw=2.25, label=f"Centroïde source ({src_class})")
-axes[0].plot(mean_encoded_dst[0], color="blue", lw=2.25, label=f"Centroïde destination ({dst_class})")
+axes[0].plot(mean_encoded_dst[0] - mean_encoded_src[0],
+             color="gray", ls="--", lw=0.75,
+             label=f"Différence (translation {src_class} → {dst_class})")
+axes[0].plot(mean_encoded_src[0],
+             color="red", lw=2.25,
+             label=f"Centroïde source ({src_class})")
+axes[0].plot(mean_encoded_dst[0],
+             color="blue", lw=2.25,
+             label=f"Centroïde destination ({dst_class})")
 axes[0].set_title("Centroïdes")
 axes[0].legend(loc="lower left")
 
-axes[1].plot(X_encoded_valid[0] - mean_encoded_src[0], color="gray", ls="--", lw=0.75, label=f"Différence (écart au centroïde source {src_class})")
-axes[1].plot(mean_encoded_src[0], color="red", ls="--", lw=1.5, label=f"Centroïde source ({src_class})")
-axes[1].plot(X_encoded_valid[0], color="darkred", lw=2.25, label=f"Chiffre source ({src_class})")
+axes[1].plot(X_encoded_valid[0] - mean_encoded_src[0],
+             color="gray", ls="--", lw=0.75,
+             label=f"Différence (écart au centroïde source {src_class})")
+axes[1].plot(mean_encoded_src[0],
+             color="red", ls="--", lw=1.5,
+             label=f"Centroïde source ({src_class})")
+axes[1].plot(X_encoded_valid[0],
+             color="darkred", lw=2.25,
+             label=f"Chiffre source ({src_class})")
 axes[1].set_title("Centroïde source et Chiffre source")
 axes[1].legend(loc="lower left")
 
-axes[2].plot(translated1[0] - mean_encoded_dst[0], color="gray", ls="--", lw=0.75, label=f"Différence (écart au centroïde destination {dst_class})")
-axes[2].plot(mean_encoded_dst[0], color="blue", ls="--", lw=1.5, label=f"Centroïde destination ({dst_class})")
-axes[2].plot(translated1[0], color="darkblue", lw=2.25, label=f"Chiffre translaté ({dst_class})")
-axes[2].set_title("Centroïde destination et Chiffre translaté")
+axes[2].plot(translated2[0] - mean_encoded_dst[0],
+             color="gray", ls="--", lw=0.75,
+             label=f"Différence (écart au centroïde destination {dst_class})")
+axes[2].plot(mean_encoded_dst[0],
+             color="blue", ls="--", lw=1.5,
+             label=f"Centroïde destination ({dst_class})")
+axes[2].plot(translated2[0],
+             color="darkblue", lw=2.25,
+             label=f"Chiffre décodé & translaté ({dst_class})")
+axes[2].set_title("Centroïde destination et Chiffre décodé & translaté")
 axes[2].legend(loc="lower left")
 
-axes[3].plot(translated2[0] - translated1[0], color="gray", ls="--", lw=0.75, label=f"Différence")
-axes[3].plot(translated1[0], color="darkblue", lw=2.25, label=f"Chiffre translaté ({dst_class})")
-axes[3].plot(translated2[0], color="#32CD32", ls="--", lw=1.5, label=f"Chiffre décodé & translaté ({dst_class})")
-axes[3].set_title("Chiffre translaté et Chiffre décodé & translaté")
+axes[3].plot(translated2[0] - mean_encoded_src[0],
+             color="gray", ls="--", lw=0.75,
+             label=f"Différence (écart au centroïde source {src_class})")
+axes[3].plot(mean_encoded_src[0],
+             color="red", ls="--", lw=1.5,
+             label=f"Centroïde source ({src_class})")
+axes[3].plot(translated2[0],
+             color="darkblue", lw=2.25,
+             label=f"Chiffre décodé & translaté ({dst_class})")
+axes[3].set_title("Centroïde source et Chiffre décodé & translaté")
 axes[3].legend(loc="lower left")
 
-for ax in axes:
+axes[4].plot(translated2[0] - translated1[0],
+             color="gray", ls="--", lw=0.75,
+             label="Différence")
+axes[4].plot(translated2[0],
+             color="darkblue", lw=2.25,
+             label=f"Chiffre décodé & translaté ({dst_class})")
+axes[4].plot(translated1[0],
+             color="#32CD32", ls="--", lw=1.5,
+             label=f"Chiffre translaté ({dst_class})")
+axes[4].set_title("Chiffre translaté et Chiffre décodé & translaté")
+axes[4].legend(loc="lower left")
+
+if len(axes) > 5:
+    fig.delaxes(axes[5])
+
+for ax in axes[:5]:
     ax.grid(True, which="both")
     ax.axhline(y=0, color="gray")
     ax.set_xlabel("Indice")
