@@ -28,7 +28,7 @@ X_valid = tf.image.resize(X_valid, (64, 64))
 
 src_digit = 1303
 src_class = Y_valid[src_digit]
-dst_class = 6
+dst_class = 3
 
 batch_size = 32
 
@@ -45,8 +45,8 @@ X_reencoded_train_dst = encoder.predict(X_decoded_train_dst, batch_size = batch_
 
 X_encoded_valid = encoder.predict(X_valid[src_digit:src_digit + 1], batch_size = batch_size)
 X_decoded_valid = decoder.predict(X_encoded_valid, batch_size = batch_size)
-X_encoded_valid = encoder.predict(X_decoded_valid, batch_size = batch_size)
-X_redecoded_valid = decoder.predict(X_encoded_valid, batch_size = batch_size)
+X_reencoded_valid = encoder.predict(X_decoded_valid, batch_size = batch_size)
+X_redecoded_valid = decoder.predict(X_reencoded_valid, batch_size = batch_size)
 X_rereencoded_valid = encoder.predict(X_redecoded_valid, batch_size = batch_size)
 
 mean_encoded_src = np.expand_dims(np.mean(X_reencoded_train_src, axis = 0), axis = 0)
@@ -54,7 +54,7 @@ mean_encoded_dst = np.expand_dims(np.mean(X_reencoded_train_dst, axis = 0), axis
 
 translation = mean_encoded_dst - mean_encoded_src
 
-translated1 = X_encoded_valid + translation
+translated1 = X_reencoded_valid + translation
 translated2 = X_rereencoded_valid + translation
 
 translated_decoded1 = decoder.predict(translated1, batch_size = batch_size)
@@ -87,25 +87,25 @@ axes[0].plot(mean_encoded_dst[0] - mean_encoded_src[0], color="gray", ls="--", l
 axes[0].plot(mean_encoded_src[0], color="red", lw=2.25, label=f"Centroïde source ({src_class})")
 axes[0].plot(mean_encoded_dst[0], color="blue", lw=2.25, label=f"Centroïde destination ({dst_class})")
 axes[0].set_title("Centroïdes")
-axes[0].legend()
+axes[0].legend(loc="lower left")
 
 axes[1].plot(X_encoded_valid[0] - mean_encoded_src[0], color="gray", ls="--", lw=0.75, label=f"Différence (écart au centroïde source {src_class})")
 axes[1].plot(mean_encoded_src[0], color="red", ls="--", lw=1.5, label=f"Centroïde source ({src_class})")
 axes[1].plot(X_encoded_valid[0], color="darkred", lw=2.25, label=f"Chiffre source ({src_class})")
 axes[1].set_title("Centroïde source et Chiffre source")
-axes[1].legend()
+axes[1].legend(loc="lower left")
 
 axes[2].plot(translated1[0] - mean_encoded_dst[0], color="gray", ls="--", lw=0.75, label=f"Différence (écart au centroïde destination {dst_class})")
 axes[2].plot(mean_encoded_dst[0], color="blue", ls="--", lw=1.5, label=f"Centroïde destination ({dst_class})")
 axes[2].plot(translated1[0], color="darkblue", lw=2.25, label=f"Chiffre translaté ({dst_class})")
 axes[2].set_title("Centroïde destination et Chiffre translaté")
-axes[2].legend()
+axes[2].legend(loc="lower left")
 
 axes[3].plot(translated2[0] - translated1[0], color="gray", ls="--", lw=0.75, label=f"Différence")
 axes[3].plot(translated1[0], color="darkblue", lw=2.25, label=f"Chiffre translaté ({dst_class})")
 axes[3].plot(translated2[0], color="#32CD32", ls="--", lw=1.5, label=f"Chiffre décodé & translaté ({dst_class})")
 axes[3].set_title("Chiffre translaté et Chiffre décodé & translaté")
-axes[3].legend()
+axes[3].legend(loc="lower left")
 
 for ax in axes:
     ax.grid(True, which="both")
