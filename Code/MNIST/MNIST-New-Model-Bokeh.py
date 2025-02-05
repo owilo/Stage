@@ -11,6 +11,8 @@ from bokeh.palettes import Viridis256
 import base64
 import cv2
 
+import utils
+
 (X_train, Y_train), (X_valid, Y_valid) = mnist.load_data()
 
 X_train = X_train.astype("float32") / 255.
@@ -27,9 +29,7 @@ batch_size = 32
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 
-X_encoded_all = encoder.predict(X_valid, batch_size=batch_size)
-X_decoded_all = decoder.predict(X_encoded_all, batch_size=batch_size)
-X_reencoded_all = encoder.predict(X_decoded_all, batch_size=batch_size)
+X_reencoded_all = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
 
 tSNE = TSNE(n_components=2, random_state=1337, max_iter=300)
 X_tSNE = tSNE.fit_transform(X_reencoded_all)

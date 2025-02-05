@@ -12,6 +12,8 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+import utils
+
 K.clear_session()
 np.random.seed(42)
 
@@ -31,13 +33,8 @@ batch_size = 32
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 
-X_encoded_train = encoder.predict(X_train, batch_size = batch_size)
-X_decoded_train = decoder.predict(X_encoded_train, batch_size = batch_size)
-X_reencoded_train = encoder.predict(X_decoded_train, batch_size = batch_size)
-
-X_encoded_valid = encoder.predict(X_valid, batch_size = batch_size)
-X_decoded_valid = decoder.predict(X_encoded_valid, batch_size = batch_size)
-X_reencoded_valid = encoder.predict(X_decoded_valid, batch_size = batch_size)
+X_reencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
+encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
 digits = [
     [157, 713, 1261, 3911, 5684, 5865, 8067, 8199, 8681, 9753],  # 0
@@ -53,11 +50,6 @@ digits = [
 ]
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
-
-encoded_means = [None] * 10
-for i in range(10):
-    encoded_means[i] = np.mean(X_reencoded_train[Y_train == i], axis = 0)
-    encoded_means[i] = np.expand_dims(encoded_means[i], axis = 0)
 
 for src_class in range(10):
     fig, axes = plt.subplots(10, 12, figsize=(24, 20))

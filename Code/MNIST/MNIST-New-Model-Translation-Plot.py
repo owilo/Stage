@@ -12,6 +12,8 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+import utils
+
 K.clear_session()
 np.random.seed(42)
 
@@ -35,27 +37,18 @@ batch_size = 32
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 
-X_encoded_train_src = encoder.predict(X_train[Y_train == src_class], batch_size = batch_size)
-X_decoded_train_src = decoder.predict(X_encoded_train_src, batch_size = batch_size)
-X_reencoded_train_src = encoder.predict(X_decoded_train_src, batch_size = batch_size)
+X_encoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 1, batch_size)
+X_reencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 2, batch_size)
+X_rereencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
+encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
-X_encoded_train_dst = encoder.predict(X_train[Y_train == dst_class], batch_size = batch_size)
-X_decoded_train_dst = decoder.predict(X_encoded_train_dst, batch_size = batch_size)
-X_reencoded_train_dst = encoder.predict(X_decoded_train_dst, batch_size = batch_size)
-
-X_encoded_valid = encoder.predict(X_valid[src_digit:src_digit + 1], batch_size = batch_size)
-X_decoded_valid = decoder.predict(X_encoded_valid, batch_size = batch_size)
-X_reencoded_valid = encoder.predict(X_decoded_valid, batch_size = batch_size)
-X_redecoded_valid = decoder.predict(X_reencoded_valid, batch_size = batch_size)
-X_rereencoded_valid = encoder.predict(X_redecoded_valid, batch_size = batch_size)
-
-mean_encoded_src = np.expand_dims(np.mean(X_reencoded_train_src, axis = 0), axis = 0)
-mean_encoded_dst = np.expand_dims(np.mean(X_reencoded_train_dst, axis = 0), axis = 0)
+mean_encoded_src = encoded_means[src_class]
+mean_encoded_dst = encoded_means[dst_class]
 
 translation = mean_encoded_dst - mean_encoded_src
 
-translated1 = X_reencoded_valid + translation
-translated2 = X_rereencoded_valid + translation
+translated1 = X_reencoded_valid[src_digit : src_digit + 1] + translation
+translated2 = X_rereencoded_valid[src_digit : src_digit + 1] + translation
 
 translated_decoded1 = decoder.predict(translated1, batch_size = batch_size)
 translated_decoded2 = decoder.predict(translated2, batch_size = batch_size)

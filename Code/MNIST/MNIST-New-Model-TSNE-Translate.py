@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
-import os
-
 from sklearn.manifold import TSNE
 
 from keras.datasets import mnist
@@ -12,20 +10,7 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-def cache_array(filename, array_generator, save_cache=True, verbose=True):
-    file_path = os.path.join("./Cache", filename)
-
-    if os.path.exists(file_path):
-        if (verbose):
-            print(f"Chargement des données depuis {filename}")
-        return np.load(file_path)
-    else:
-        array = array_generator()
-        if (save_cache):
-            if (verbose):
-                print(f"Sauvegarde des données dans {filename}")
-            np.save(file_path, array)
-        return array
+import utils
 
 K.clear_session()
 np.random.seed(42)
@@ -46,13 +31,8 @@ batch_size = 32
 encoder = load_model("./Models/VAE/mnist-128-encoder-dis2.keras")
 decoder = load_model("./Models/VAE/mnist-128-decoder-dis2.keras")
 
-"""X_encoded_all = cache_array(f"{ae_type}-encoded-{latent_dim}-dis2.npy", lambda: encoder.predict(X_eval, batch_size = batch_size))
-X_decoded_all = cache_array(f"{ae_type}-decoded-{latent_dim}-dis2.npy", lambda: decoder.predict(X_encoded_all, batch_size = batch_size))
-X_reencoded_all = cache_array(f"{ae_type}-reencoded-{latent_dim}-dis.npy", lambda: encoder.predict(X_decoded_all, batch_size = batch_size))"""
-
-X_encoded_all = encoder.predict(X_valid, batch_size = batch_size)
-X_decoded_all = decoder.predict(X_encoded_all, batch_size = batch_size)
-X_reencoded_all = encoder.predict(X_decoded_all, batch_size = batch_size)
+X_reencoded_all = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
+encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
 digits = [
     [157, 713, 1261, 3911, 5684, 5865, 8067, 8199, 8681, 9753],  # 0
@@ -70,12 +50,8 @@ digits = [
 src_class = 2
 dst_class = 6
 
-mean_encoded_src = np.mean(X_reencoded_all[Y_valid == src_class], axis=0)
-mean_encoded_dst = np.mean(X_reencoded_all[Y_valid == dst_class], axis=0)
-translation = mean_encoded_dst - mean_encoded_src
-
-mean_encoded_src = np.mean(X_reencoded_all[Y_valid == src_class], axis=0)
-mean_encoded_dst = np.mean(X_reencoded_all[Y_valid == dst_class], axis=0)
+mean_encoded_src = encoded_means[src_class]
+mean_encoded_dst = encoded_means[dst_class]
 translation = mean_encoded_dst - mean_encoded_src
 
 X_encoded = X_reencoded_all[digits[src_class]]
