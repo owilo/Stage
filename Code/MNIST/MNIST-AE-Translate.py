@@ -15,13 +15,15 @@ def cache_array(filename, array_generator, save_cache=True, verbose=True):
     file_path = os.path.join("./Cache", filename)
 
     if os.path.exists(file_path):
-        if (verbose):
+        if verbose:
             print(f"Chargement des données depuis {filename}")
         return np.load(file_path)
     else:
+        if verbose:
+            print(f"Données introuvables dans {filename}, démarrage de la sauvegarde...")
         array = array_generator()
         if (save_cache):
-            if (verbose):
+            if verbose:
                 print(f"Sauvegarde des données dans {filename}")
             np.save(file_path, array)
         return array
