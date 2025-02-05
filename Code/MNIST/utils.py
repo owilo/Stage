@@ -19,13 +19,13 @@ def cache_array(filename, array_generator, save_cache=True, verbose=True):
         return array
     
 def encoded(x, name, encoder, decoder, n, batch_size = 1, save_last = True, save_encoding = False, save_decoding = False, verbose = True):
-    return cache_array(f"{name}-encoded-{n}.npy", lambda: encoder.predict(
+    return cache_array(f"{name}-{encoder.name}-{decoder.name}-encoded-{n}.npy", lambda: encoder.predict(
         (decoded(x, name, encoder, decoder, n, batch_size, False, save_encoding, save_decoding, verbose) if n > 1 else x),
         batch_size = batch_size
     ), save_encoding or save_last, verbose)
 
 def decoded(x, name, encoder, decoder, n, batch_size = 1, save_last = True, save_encoding = False, save_decoding = False, verbose = True):
-    return cache_array(f"{name}-decoded-{n}.npy", lambda: decoder.predict(
+    return cache_array(f"{name}-{encoder.name}-{decoder.name}-decoded-{n}.npy", lambda: decoder.predict(
         (encoded(x, name, encoder, decoder, n - 1, batch_size, False, save_encoding, save_decoding, verbose) if n > 1 else x),
         batch_size = batch_size
     ), save_decoding or save_last, verbose)
@@ -39,4 +39,4 @@ def encoded_means(x, y, name, encoder, decoder, n, batch_size = 1, save_last = T
             encoded_means[i] = np.expand_dims(encoded_means[i], axis=0)
         return np.array(encoded_means)
 
-    return cache_array(f"{name}-{n}.npy", calculate_means, save_last, verbose)
+    return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_means, save_last, verbose)
