@@ -44,7 +44,7 @@ digits = [
     5333  # 9
 ]
 
-classifier = load_model("./Models/Classifieur/classifier.keras")
+classifier = load_model("./Models/Classifieur/classifier-linp.keras")
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 
@@ -66,6 +66,9 @@ for src_class in range(10):
         Y_pred_proba = classifier.predict(decoded, verbose = False)
 
         guessed_class = np.argmax(Y_pred_proba)
+        Y_pred_proba -= Y_pred_proba.min()
+        Y_pred_proba /= Y_pred_proba.sum()
+
         certainty = np.max(Y_pred_proba)
 
         ax = axes[src_class, dst_class]

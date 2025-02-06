@@ -4,8 +4,10 @@ import cv2
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-encoder = load_model("./Models/DISVAE/mnist-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-decoder.keras")
+import utils
+
+encoder = load_model("./Models/DISVAE/mnist-16-encoder.keras")
+decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
 
 (_, _), (X_valid, _) = tf.keras.datasets.mnist.load_data()
 
@@ -18,7 +20,7 @@ img_input = img_resized.astype('float32') / 255.0
 img_input = np.expand_dims(img_input, axis=-1)
 img_input_batch = np.expand_dims(img_input, axis=0)
 
-latent_vector = encoder.predict(img_input_batch)[0]
+latent_vector = utils.encoded(img_input_batch, f"digit_{src_digit}", encoder, decoder, 3, 1, False, False, False, False)
 
 fig, (ax_latent, ax_img) = plt.subplots(1, 2, figsize=(14, 6), gridspec_kw={'width_ratios': [3, 1]})
 

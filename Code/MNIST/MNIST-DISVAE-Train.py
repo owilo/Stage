@@ -25,9 +25,9 @@ X_valid = tf.image.resize(X_valid, (64, 64))
 num_epochs = 5
 
 img_shape = (64, 64, 1)
-batch_size = 16
+batch_size = 32
 
-latent_dim = 16
+latent_dim = 64
 
 input_img = Input(shape = img_shape)
 

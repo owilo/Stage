@@ -1,12 +1,7 @@
 import numpy as np
-from sklearn.manifold import TSNE
-from skimage.metrics import peak_signal_noise_ratio as psnr
-from skimage.metrics import structural_similarity as ssim
 import keras
 from keras.datasets import mnist
-from keras.layers import (Input, Reshape, Conv2D, Conv2DTranspose, Flatten,
-                          Dense, Lambda, ReLU, LeakyReLU, BatchNormalization,
-                          MaxPooling2D, UpSampling2D)
+from keras.layers import Input, Reshape, Conv2D, Conv2DTranspose, Flatten, Dense, Lambda, ReLU, LeakyReLU, BatchNormalization, MaxPooling2D, UpSampling2D
 from keras.models import Model
 import tensorflow as tf
 import tensorflow.keras.backend as K
@@ -74,21 +69,21 @@ x = Conv2D(1, 3, padding="same", activation="sigmoid")(x)
 decoder = Model(decoder_input, x, name=f"btcvaedecoder-{latent_dim}")
 z_decoded = decoder(z)
 
-def log_density_gaussian_tf(x, mu, logvar):
+def log_density_gaussian(x, mu, logvar):
     norm = -0.5 * (tf.math.log(2.0 * np.pi) + logvar)
     log_dens = norm - 0.5 * ((x - mu) ** 2 / tf.exp(logvar))
     return log_dens
 
-def matrix_log_density_gaussian_tf(x, mu, logvar):
+def matrix_log_density_gaussian(x, mu, logvar):
     batch_size, dim = tf.unstack(tf.shape(x))
     x = tf.reshape(x, [batch_size, 1, 1, dim])
     mu = tf.reshape(mu, [1, batch_size, 1, dim])
     logvar = tf.reshape(logvar, [1, batch_size, 1, dim])
-    log_dens = log_density_gaussian_tf(x, mu, logvar)
+    log_dens = log_density_gaussian(x, mu, logvar)
     log_dens = tf.squeeze(log_dens, axis=2)
     return log_dens
 
-def log_importance_weight_matrix_tf(batch_size, dataset_size):
+def log_importance_weight_matrix(batch_size, dataset_size):
     N = tf.cast(dataset_size, tf.float32)
     M = tf.cast(batch_size - 1, tf.float32)
     strat_weight = (N - M) / (N * M)
@@ -97,7 +92,7 @@ def log_importance_weight_matrix_tf(batch_size, dataset_size):
     W += diag
     return tf.math.log(W)
 
-def linear_annealing_tf(init, fin, step, annealing_steps):
+def linear_annealing(init, fin, step, annealing_steps):
     return tf.cond(
         tf.equal(annealing_steps, 0),
         lambda: fin,
@@ -105,7 +100,7 @@ def linear_annealing_tf(init, fin, step, annealing_steps):
     )
 
 class BtcvaeLossLayer(keras.layers.Layer):
-    def __init__(self, n_data, alpha=1.0, beta=6.0, gamma=1.0, is_mss=True, steps_anneal=0, **kwargs):
+    def __init__(self, n_data, alpha=1.0, beta=1.0, gamma=1.0, is_mss=True, steps_anneal=0, **kwargs):
         super().__init__(**kwargs)
         self.n_data = n_data
         self.alpha = alpha
@@ -122,15 +117,15 @@ class BtcvaeLossLayer(keras.layers.Layer):
         recon_x_flat = K.flatten(recon_x)
         rec_loss = K.sum(K.binary_crossentropy(x_flat, recon_x_flat)) * (64 * 64)
         
-        log_pz = log_density_gaussian_tf(z, tf.zeros_like(z), tf.zeros_like(z))
+        log_pz = log_density_gaussian(z, tf.zeros_like(z), tf.zeros_like(z))
         log_pz = K.sum(log_pz, axis=1)
         
-        log_q_zCx = log_density_gaussian_tf(z, z_mu, z_log_var)
+        log_q_zCx = log_density_gaussian(z, z_mu, z_log_var)
         log_q_zCx = K.sum(log_q_zCx, axis=1)
         
-        mat_log_qz = matrix_log_density_gaussian_tf(z, z_mu, z_log_var)
+        mat_log_qz = matrix_log_density_gaussian(z, z_mu, z_log_var)
         if self.is_mss:
-            log_iw_mat = log_importance_weight_matrix_tf(tf.shape(z)[0], self.n_data)
+            log_iw_mat = log_importance_weight_matrix(tf.shape(z)[0], self.n_data)
             mat_log_qz += log_iw_mat[..., tf.newaxis]
         
         log_qz = tf.reduce_logsumexp(K.sum(mat_log_qz, axis=2), axis=1)
@@ -140,8 +135,8 @@ class BtcvaeLossLayer(keras.layers.Layer):
         tc_loss = K.mean(log_qz - log_prod_qzi)
         dw_kl_loss = K.mean(log_prod_qzi - log_pz)
         
-        anneal_reg = linear_annealing_tf(0.0, 1.0, self.n_train_steps, self.steps_anneal)
-        total_loss = rec_loss + self.alpha * mi_loss + self.beta * tc_loss + anneal_reg * self.gamma * dw_kl_loss
+        anneal_reg = linear_annealing(0.0, 1.0, self.n_train_steps, self.steps_anneal)
+        total_loss = rec_loss + self.alpha * mi_loss + self.beta * tc_loss + self.gamma * anneal_reg * dw_kl_loss
         
         self.add_loss(total_loss)
         
@@ -163,5 +158,5 @@ decoder.summary()
 
 vae.fit(X_train, None, shuffle=True, epochs=num_epochs, batch_size=batch_size, validation_data=(X_valid, None))
 
-encoder.save(f"./Models/DISVAE/mnist-btcvae-{latent_dim}-encoder.keras")
-decoder.save(f"./Models/DISVAE/mnist-btcvae-{latent_dim}-decoder.keras")
+encoder.save(f"./Models/DISVAE/mnist-btcvae2-{latent_dim}-encoder.keras")
+decoder.save(f"./Models/DISVAE/mnist-btcvae2-{latent_dim}-decoder.keras")
