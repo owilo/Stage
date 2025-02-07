@@ -78,6 +78,7 @@ for src_class in range(10):
     plt.title("Distance euclidienne moyenne des chiffres translatés aux centroïdes des classes", fontsize=14)
     plt.xlabel("Centroïde")
     plt.ylabel("Classe translatée")
+    plt.tight_layout()
     plt.savefig(f"./Results/Distances/mnist-eucl-distance-centroid-translated-{src_class}.png")
     plt.close()
     
@@ -87,5 +88,6 @@ for src_class in range(10):
     plt.title("Distance cosinus moyenne des chiffres translatés aux centroïdes des classes", fontsize=14)
     plt.xlabel("Centroïde")
     plt.ylabel("Classe translatée")
+    plt.tight_layout()
     plt.savefig(f"./Results/Distances/mnist-cosine-distance-centroid-translated-{src_class}.png")
     plt.close()

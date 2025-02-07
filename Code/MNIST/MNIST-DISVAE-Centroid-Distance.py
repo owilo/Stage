@@ -71,6 +71,7 @@ sns.heatmap(eucl_dist_matrix, annot=True, cmap="Reds", fmt=".2f", xticklabels=ra
 plt.title("Distance euclidienne moyenne des chiffres aux centroïdes des classes", fontsize=14)
 plt.xlabel("Centroïde")
 plt.ylabel("Classe source")
+plt.tight_layout()
 plt.savefig(f"./Results/Distances/mnist-eucl-distance-centroid.png")
 plt.close()
 
@@ -79,5 +80,6 @@ sns.heatmap(cos_dist_matrix, annot=True, cmap="Reds", fmt=".2f", xticklabels=ran
 plt.title("Distance cosinus moyenne des chiffres aux centroïdes des classes", fontsize=14)
 plt.xlabel("Centroïde")
 plt.ylabel("Classe source")
+plt.tight_layout()
 plt.savefig(f"./Results/Distances/mnist-cosine-distance-centroid.png")
 plt.close()

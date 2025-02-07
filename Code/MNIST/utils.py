@@ -1,5 +1,10 @@
 import os
 import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+from matplotlib.colors import BoundaryNorm
+import matplotlib.patches as mpatches
 
 def cache_array(filename, array_generator, save_cache=True, verbose=True):
     file_path = os.path.join("./Cache", filename)
@@ -40,3 +45,32 @@ def encoded_means(x, y, name, encoder, decoder, n, batch_size = 1, save_last = T
         return np.array(encoded_means)
 
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_means, save_last, verbose)
+
+def classify(image, classifier):
+    image = tf.image.resize(image, (28, 28)).numpy()
+    pred = classifier.predict(image)
+    guessed_class = np.argmax(pred)
+
+    pred_lin = np.zeros_like(pred)
+    mask = pred > 0
+    pred_lin[mask] = np.log(pred[mask])
+    pred_lin -= pred_lin.min()
+    pred_lin /= pred_lin.sum()
+    return guessed_class, pred, pred_lin
+
+def pred_bar(pred, fig, ax):
+    cmap = plt.cm.Paired
+    cpred = np.insert(pred.cumsum(), 0, 0)
+    norm = BoundaryNorm(cpred, cmap.N)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    cbar = fig.colorbar(sm, ax=ax, aspect=10, orientation="horizontal", pad=0.02, boundaries=cpred, spacing='proportional')
+    cbar.ax.xaxis.set_ticks([])
+
+def pred_classes(fig):
+    cmap = plt.cm.Paired
+    colors = [cmap(i) for i in range(10)]
+
+    legend_patches = [mpatches.Patch(color=colors[i], label=f"{i}") for i in range(10)]
+
+    plt.subplots_adjust(bottom=0.2)
+    fig.legend(handles=legend_patches, loc="lower center", ncol=10, fontsize=10, frameon=False, title="Classes")

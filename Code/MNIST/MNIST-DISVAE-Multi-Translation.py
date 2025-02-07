@@ -44,7 +44,7 @@ digits = [
     [1869, 3840, 4843, 5456, 7246, 7382, 8084, 8372, 8899, 8977]  # 9
 ]
 
-classifier = load_model("./Models/Classifieur/classifier-linp.keras")
+classifier = load_model("./Models/Classifieur/classifier.keras")
 
 for src_class in range(10):
     fig, axes = plt.subplots(10, 12, figsize=(24, 20))
@@ -61,16 +61,10 @@ for src_class in range(10):
         src_image = X_valid[src_digit:src_digit + 1]
         src_image = tf.image.resize(src_image, (28, 28)).numpy()
 
-        Y_pred_proba = classifier.predict(src_image, verbose = False)
-
-        guessed_class = np.argmax(Y_pred_proba)
-        Y_pred_proba -= Y_pred_proba.min()
-        Y_pred_proba /= Y_pred_proba.sum()
-
-        certainty = np.max(Y_pred_proba)
+        guessed_class, p, linp = utils.classify(src_image, classifier)
 
         ax.imshow(src_image.reshape(28, 28), cmap="gray")
-        ax.text(0.5, -0.15, f"({guessed_class}, {certainty:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
+        ax.text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
         ax.axis('off')
 
     for i in range(10):
@@ -88,17 +82,11 @@ for src_class in range(10):
             decoded = decoder.predict(translated, batch_size = batch_size)
             decoded = tf.image.resize(decoded, (28, 28)).numpy()
 
-            Y_pred_proba = classifier.predict(decoded, verbose = False)
-
-            guessed_class = np.argmax(Y_pred_proba)
-            Y_pred_proba -= Y_pred_proba.min()
-            Y_pred_proba /= Y_pred_proba.sum()
-
-            certainty = np.max(Y_pred_proba)
+            guessed_class, p, linp = utils.classify(decoded, classifier)
 
             ax = axes[i, dst_class + 2]
             ax.imshow(decoded[0].reshape(28, 28), cmap="gray")
-            ax.text(0.5, -0.15, f"({guessed_class}, {certainty:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
+            ax.text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
             ax.axis('off')
 
     plt.tight_layout()

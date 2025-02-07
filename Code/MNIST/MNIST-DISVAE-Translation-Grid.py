@@ -25,8 +25,8 @@ X_valid = tf.image.resize(X_valid, (64, 64))
 
 batch_size = 32
 
-encoder = load_model("./Models/DISVAE/mnist-btcvae-128-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-btcvae-128-decoder.keras")
+encoder = load_model("./Models/DISVAE/mnist-128-encoder.keras")
+decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
 
 X_reencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
 encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
@@ -44,7 +44,7 @@ digits = [
     5333  # 9
 ]
 
-classifier = load_model("./Models/Classifieur/classifier-linp.keras")
+classifier = load_model("./Models/Classifieur/classifier.keras")
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 
@@ -63,18 +63,18 @@ for src_class in range(10):
         decoded = decoder.predict(translated, batch_size = batch_size)
         decoded = tf.image.resize(decoded, (28, 28)).numpy()
 
-        Y_pred_proba = classifier.predict(decoded, verbose = False)
-
-        guessed_class = np.argmax(Y_pred_proba)
-        Y_pred_proba -= Y_pred_proba.min()
-        Y_pred_proba /= Y_pred_proba.sum()
-
-        certainty = np.max(Y_pred_proba)
+        guessed_class, p, linp = utils.classify(decoded, classifier)
 
         ax = axes[src_class, dst_class]
+        #utils.pred_bar(linp, fig, ax)
+        
         ax.imshow(decoded[0].reshape(28, 28), cmap="gray")
-        ax.text(0.5, -0.15, f"({guessed_class}, {certainty:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
+        ax.text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
         ax.axis('off')
 
+
+
 plt.tight_layout()
+#utils.pred_classes(fig)
+
 plt.savefig("./Results/mnist-translation-grid.png")
