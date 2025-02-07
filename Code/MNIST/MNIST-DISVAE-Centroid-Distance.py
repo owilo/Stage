@@ -43,49 +43,41 @@ def cosine_distance(vec1, vec2):
         return 0
     return 1 - dot / (norm1 * norm2)
 
+eucl_dist_matrix = np.zeros((10, 10), dtype=float)
+cos_dist_matrix = np.zeros((10, 10), dtype=float)
+
 for src_class in range(10):
-    eucl_dist_matrix = np.zeros((10, 10), dtype=float)
-    cos_dist_matrix = np.zeros((10, 10), dtype=float)
-
     digits = X_rereencoded_valid[Y_valid == src_class]
-    mean_encoded_src = encoded_means[src_class]
-    
-    for dst_class in range(10):
-        mean_encoded_dst = encoded_means[dst_class]
-        translation = mean_encoded_dst - mean_encoded_src
-        translated = digits + translation
-        
-        for cnt_class in range(10):
-            eucl_distances = []
-            cos_distances = []
-            
-            for translated_digit in translated:
-                eucl_distances.append(euclidean_distance(translated_digit, encoded_means[cnt_class]))
-                cos_distances.append(cosine_distance(translated_digit, encoded_means[cnt_class].flatten()))
-            
-            eucl_distances = np.array(eucl_distances)
-            cos_distances = np.array(cos_distances)
-            
-            avg_eucl_distance = np.mean(eucl_distances, axis=0)
-            avg_cos_distance = np.mean(cos_distances, axis=0)
-            
-            eucl_dist_matrix[dst_class, cnt_class] = avg_eucl_distance
-            cos_dist_matrix[dst_class, cnt_class] = avg_cos_distance
 
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(eucl_dist_matrix, annot=True, cmap="coolwarm", fmt=".2f", xticklabels=range(10), yticklabels=range(10))
-    plt.suptitle(f"Classe source {src_class}", fontsize=22)
-    plt.title("Distance euclidienne moyenne des chiffres translatés aux centroïdes des classes", fontsize=14)
-    plt.xlabel("Centroïde")
-    plt.ylabel("Classe translatée")
-    plt.savefig(f"./Results/Distances/mnist-eucl-distance-centroid-{src_class}.png")
-    plt.close()
-    
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cos_dist_matrix, annot=True, cmap="coolwarm", fmt=".2f", xticklabels=range(10), yticklabels=range(10))
-    plt.suptitle(f"Classe source {src_class}", fontsize=22)
-    plt.title("Distance cosinus moyenne des chiffres translatés aux centroïdes des classes", fontsize=14)
-    plt.xlabel("Centroïde")
-    plt.ylabel("Classe translatée")
-    plt.savefig(f"./Results/Distances/mnist-cosine-distance-centroid-{src_class}.png")
-    plt.close()
+    for cnt_class in range(10):
+        eucl_distances = []
+        cos_distances = []
+        
+        for digit in digits:
+            eucl_distances.append(euclidean_distance(digit, encoded_means[cnt_class]))
+            cos_distances.append(cosine_distance(digit, encoded_means[cnt_class].flatten()))
+        
+        eucl_distances = np.array(eucl_distances)
+        cos_distances = np.array(cos_distances)
+        
+        avg_eucl_distance = np.mean(eucl_distances, axis=0)
+        avg_cos_distance = np.mean(cos_distances, axis=0)
+        
+        eucl_dist_matrix[src_class, cnt_class] = avg_eucl_distance
+        cos_dist_matrix[src_class, cnt_class] = avg_cos_distance
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(eucl_dist_matrix, annot=True, cmap="Reds", fmt=".2f", xticklabels=range(10), yticklabels=range(10))
+plt.title("Distance euclidienne moyenne des chiffres aux centroïdes des classes", fontsize=14)
+plt.xlabel("Centroïde")
+plt.ylabel("Classe source")
+plt.savefig(f"./Results/Distances/mnist-eucl-distance-centroid.png")
+plt.close()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(cos_dist_matrix, annot=True, cmap="Reds", fmt=".2f", xticklabels=range(10), yticklabels=range(10))
+plt.title("Distance cosinus moyenne des chiffres aux centroïdes des classes", fontsize=14)
+plt.xlabel("Centroïde")
+plt.ylabel("Classe source")
+plt.savefig(f"./Results/Distances/mnist-cosine-distance-centroid.png")
+plt.close()
