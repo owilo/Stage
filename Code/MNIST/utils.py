@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm
 import matplotlib.patches as mpatches
 
-def cache_array(filename, array_generator, save_cache=True, verbose=True):
+def cache_array(filename, array_generator, save_cache=True, load_cache=True, verbose=True):
     file_path = os.path.join("./Cache", filename)
+    if not load_cache:
+        return array_generator()
 
     if os.path.exists(file_path):
         if verbose:
@@ -27,13 +29,13 @@ def encoded(x, name, encoder, decoder, n, batch_size = 1, save_last = True, save
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-encoded-{n}.npy", lambda: encoder.predict(
         (decoded(x, name, encoder, decoder, n, batch_size, False, save_encoding, save_decoding, verbose) if n > 1 else x),
         batch_size = batch_size
-    ), save_encoding or save_last, verbose)
+    ), save_encoding or save_last, name != "", verbose)
 
 def decoded(x, name, encoder, decoder, n, batch_size = 1, save_last = True, save_encoding = False, save_decoding = False, verbose = True):
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-decoded-{n}.npy", lambda: decoder.predict(
         (encoded(x, name, encoder, decoder, n - 1, batch_size, False, save_encoding, save_decoding, verbose) if n > 1 else x),
         batch_size = batch_size
-    ), save_decoding or save_last, verbose)
+    ), save_decoding or save_last, name != "", verbose)
 
 def encoded_means(x, y, name, encoder, decoder, n, batch_size = 1, save_last = True, save_encoding = False, save_decoding = False, verbose = True):
     def calculate_means():

@@ -47,25 +47,40 @@ image = np.expand_dims(image, axis=0)
 
 predicted = encoder.predict(image, batch_size = batch_size)
 
-fig, axes = plt.subplots(2, 12, figsize=(20, 5))
+fig, axes = plt.subplots(2, 13, figsize=(20, 5))
 axes[0, 0].imshow(cv2.cvtColor(image64, cv2.COLOR_BGR2RGB))
 axes[0, 0].set_title("Image originale")
 axes[0, 0].axis("off")
 
 axes[0, 1].imshow(image[0], cmap="gray")
-axes[0, 1].set_title("Image seuillée")
+axes[0, 1].set_title("Image inversée")
 axes[0, 1].axis("off")
+
+decoded = decoder.predict(predicted, batch_size = batch_size)
+
+axes[0, 2].imshow(decoded[0], cmap="gray")
+axes[0, 2].set_title("Encodé et décodé")
+axes[0, 2].axis("off")
 
 axes[1, 0].axis("off")
 axes[1, 1].axis("off")
+axes[1, 2].axis("off")
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
+
+predicted = encoder.predict(decoded, batch_size = batch_size)
+predicted = encoder.predict(decoded, batch_size = batch_size)
+predicted = utils.encoded(decoded, "", encoder, decoder, 2, batch_size, False)
 
 src_class, p, linp = utils.classify(image, classifier)
 
 #utils.pred_bar(linp, fig, axes[0, 1])
 
 axes[0, 1].text(0.5, -0.15, f"({src_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, 1].transAxes)
+
+guessed_class, p, linp = utils.classify(decoded, classifier)
+
+axes[0, 2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, 2].transAxes)
 
 mean_encoded_src = encoded_means[src_class]
 for dst_class in range(10):
@@ -74,29 +89,29 @@ for dst_class in range(10):
     translated = predicted + translation
     decoded = decoder.predict(translated, batch_size=batch_size)
 
-    im = axes[0, dst_class + 2].imshow(decoded[0], cmap="gray")
-    axes[0, dst_class + 2].set_title(f"Classe {dst_class}")
-    axes[0, dst_class + 2].axis("off")
+    im = axes[0, dst_class + 3].imshow(decoded[0], cmap="gray")
+    axes[0, dst_class + 3].set_title(f"Classe {dst_class}")
+    axes[0, dst_class + 3].axis("off")
 
     guessed_class, p, linp = utils.classify(decoded, classifier)
 
     #utils.pred_bar(linp, fig, axes[0, dst_class + 2])
 
-    axes[0, dst_class + 2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, dst_class + 2].transAxes)
+    axes[0, dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, dst_class + 3].transAxes)
 
     reencoded = encoder.predict(decoded, batch_size = batch_size)
     invTranslated = reencoded - translation
 
     redecoded = decoder.predict(invTranslated, batch_size = batch_size)
 
-    axes[1, dst_class + 2].imshow(redecoded[0], cmap="gray")
-    axes[1, dst_class + 2].axis("off")
+    axes[1, dst_class + 3].imshow(redecoded[0], cmap="gray")
+    axes[1, dst_class + 3].axis("off")
 
     guessed_class, p, linp = utils.classify(redecoded, classifier)
 
     #utils.pred_bar(linp, fig, axes[1, dst_class + 2])
 
-    axes[1, dst_class + 2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[1, dst_class + 2].transAxes)
+    axes[1, dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[1, dst_class + 3].transAxes)
 
 #utils.pred_classes(fig)
 
