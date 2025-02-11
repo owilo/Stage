@@ -9,7 +9,7 @@ decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
 
 (_, _), (X_valid, _) = tf.keras.datasets.mnist.load_data()
 
-src_digit = 1303
+src_digit = 2012
 img = X_valid[src_digit]
 
 img_resized = cv2.resize(img, (64, 64), interpolation=cv2.INTER_LINEAR)

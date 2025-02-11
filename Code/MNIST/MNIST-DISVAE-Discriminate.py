@@ -6,6 +6,7 @@ from keras.datasets import mnist
 import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from sklearn.feature_selection import f_classif
 
 import utils
 
@@ -30,19 +31,12 @@ decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
 
 X_reencoded_train = utils.encoded(X_train, "train_disvae", encoder, decoder, 2, batch_size)
 
-for i in range(10):
-    X_class = X_reencoded_train[Y_train == i]
+F_scores, p_values = f_classif(X_reencoded_train, Y_train)
 
-    plt.figure(figsize=(10, 8))
-    plt.axhline(y=0, color='gray')
-
-    plt.boxplot(X_class, patch_artist=True, 
-            boxprops=dict(facecolor='skyblue', color='blue'),
-            medianprops=dict(color='red', linewidth=3),
-            flierprops=dict(markerfacecolor='orange', marker='o', markersize=8, alpha=0.25, markeredgewidth=0))
-    
-    plt.xlabel("Dimension")
-    plt.ylabel("Valeur")
-    plt.title(f"Centroïde de la classe {i}")
-    plt.tight_layout()
-    plt.savefig(f"./Results/Centroid-Boxplots/mnist-centroid-boxplot-{i}.png")
+plt.figure(figsize=(10, 8))
+plt.bar(range(X_reencoded_train.shape[1]), F_scores, color='skyblue')
+plt.xlabel("Dimension")
+plt.ylabel("ANOVA F-score")
+plt.title("Pouvoir discriminant des dimensions latentes")
+plt.xticks(range(X_reencoded_train.shape[1]))
+plt.savefig("./Results/mnist-anova.png")
