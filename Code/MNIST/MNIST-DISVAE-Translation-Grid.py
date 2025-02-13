@@ -25,8 +25,8 @@ X_valid = tf.image.resize(X_valid, (64, 64))
 
 batch_size = 32
 
-encoder = load_model("./Models/DISVAE/mnist-128-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
+encoder = load_model("./Models/DISVAE/mnist-32-encoder.keras")
+decoder = load_model("./Models/DISVAE/mnist-32-decoder.keras")
 
 X_reencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
 encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
