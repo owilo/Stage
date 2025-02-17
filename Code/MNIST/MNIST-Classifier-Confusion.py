@@ -3,7 +3,7 @@ import tensorflow as tf
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score
 
 model = tf.keras.models.load_model('./Models/Classifieur/classifier.keras')
 
@@ -22,7 +22,7 @@ y_pred = np.argmax(y_pred_proba, axis=1)
 certainty = np.max(y_pred_proba, axis=1)
 average_certainty = np.mean(certainty)
 
-accuracy = precision_score(y_test, y_pred, average="macro")
+accuracy = accuracy_score(y_test, y_pred)
 
 cm = confusion_matrix(y_test, y_pred)
 
