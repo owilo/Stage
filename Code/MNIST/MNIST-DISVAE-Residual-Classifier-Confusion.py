@@ -1,6 +1,8 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+
 import seaborn as sns
 
 from keras.datasets import mnist
@@ -10,8 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from keras.utils import to_categorical
 from sklearn.metrics import precision_score, accuracy_score, confusion_matrix
-
-import tensorflow.keras.backend as K
+from sklearn.manifold import TSNE
 
 import utils
 
@@ -58,8 +59,7 @@ np.random.shuffle(X_src_class1)
 X_src_class0[-(len_src0 // 2):] = decoder.predict(utils.encoded(X_src_class0[-(len_src0 // 2):], "", encoder, decoder, 3, batch_size, False) + encoded_means[dst_class] - encoded_means[src_class0])
 X_src_class1[-(len_src1 // 2):] = decoder.predict(utils.encoded(X_src_class1[-(len_src1 // 2):], "", encoder, decoder, 3, batch_size, False) + encoded_means[dst_class] - encoded_means[src_class1])
 
-
-random_indices = np.random.choice(X_src_class0[-len_src0:].shape[0], 100, replace=False)
+"""random_indices = np.random.choice(X_src_class0[-len_src0:].shape[0], 100, replace=False)
 
 fig, axes = plt.subplots(10, 10, figsize=(10, 10))
 
@@ -68,8 +68,7 @@ for i, ax in enumerate(axes.flat):
     ax.axis('off')
 
 plt.tight_layout()
-plt.show()
-
+plt.show()"""
 
 
 X_classes = np.concatenate((X_src_class0[-len_src0:], X_src_class1[-len_src1:], X_dst_class[-len_dst:]))
@@ -79,8 +78,6 @@ Y_classes = to_categorical(np.concatenate((np.full(len_src0, 0), np.full(len_src
 X_classes_translated = np.concatenate((X_src_class0[-(len_src0 // 2):], X_src_class1[-(len_src1 // 2):]))
 X_classes_translated = tf.image.resize(X_classes_translated, (28, 28))
 Y_classes_translated = to_categorical(np.concatenate((np.full(len_src0 // 2, 0), np.full(len_src1 // 2, 1))), 3)
-
-
 
 classifier = load_model("./Models/Classifieur/residual-classifier-128.keras")
 
@@ -140,3 +137,46 @@ plt.suptitle(f"Détection des traces sur des chiffres translatés uniquement ({s
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-translated-classifier-confusion.png")
+
+
+X_classes = tf.image.resize(X_classes, (64, 64))
+X_encoded_classes = encoder.predict(X_classes)
+
+Y_tsne = np.concatenate((
+    np.full(len_src0 - len_src0 // 2, 0),
+    np.full(len_src0 // 2, 1),
+    np.full(len_src1 - len_src1 // 2, 2),
+    np.full(len_src1 // 2, 3),
+    np.full(len_dst, 4),
+))
+
+tsne = TSNE(n_components = 2, random_state = 1337, max_iter = 300)
+X_tsne = tsne.fit_transform(X_encoded_classes)
+
+plt.figure(figsize=(8, 8))
+
+scatter = plt.scatter(
+    X_tsne[:, 0],
+    X_tsne[:, 1],
+    c=Y_tsne,
+    cmap="Paired",
+    alpha=0.35,
+    s=40
+)
+
+unique_classes = np.unique(Y_tsne)
+norm = Normalize(vmin = min(unique_classes), vmax = max(unique_classes))
+labels = [
+    f"{src_class0} inchangé",
+    f"{src_class0} translaté en {dst_class}",
+    f"{src_class1} inchangé",
+    f"{src_class1} translaté en {dst_class}",
+    f"{dst_class} inchangé"
+]
+for i, label in enumerate(labels):
+    plt.scatter([], [], color=plt.cm.Paired(norm(i)), label=label)
+
+plt.title(f"t-SNE : ({src_class0}, {src_class1}) → {dst_class}")
+plt.legend()
+plt.tight_layout()
+plt.savefig("./Results/mnist-translation-res-tsne.png")
