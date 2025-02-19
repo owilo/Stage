@@ -37,8 +37,8 @@ image = cv2.imread(image_path)
 
 image64 = cv2.resize(image, (64, 64))
 image = cv2.cvtColor(image64, cv2.COLOR_BGR2GRAY)
-#threshold_value = 128
-#_, image = cv2.threshold(image, threshold_value, 255, cv2.THRESH_BINARY)
+threshold_value = 128
+_, image = cv2.threshold(image, threshold_value, 255, cv2.THRESH_BINARY)
 image = cv2.bitwise_not(image)
 
 image = image.astype("float32") / 255.
@@ -68,8 +68,8 @@ axes[1, 2].axis("off")
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
 
-predicted = encoder.predict(decoded, batch_size = batch_size)
-predicted = encoder.predict(decoded, batch_size = batch_size)
+"""predicted = encoder.predict(decoded, batch_size = batch_size)
+predicted = encoder.predict(decoded, batch_size = batch_size)"""
 predicted = utils.encoded(decoded, "", encoder, decoder, 2, batch_size, False)
 
 src_class, p, linp = utils.classify(image, classifier)

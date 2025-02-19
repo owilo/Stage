@@ -3,13 +3,12 @@ import numpy as np
 from keras.datasets import mnist
 
 import tensorflow.keras.backend as K
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from keras.layers import Input, Conv2D, Flatten, Dense, ReLU, Dropout, MaxPooling2D
 from keras.models import Model
 from keras.utils import to_categorical
-
-import tensorflow.keras.backend as K
 
 import utils
 
@@ -29,14 +28,14 @@ X_valid = tf.image.resize(X_valid, (64, 64))
 
 batch_size = 32
 
-encoder = load_model("./Models/DISVAE/mnist-16-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
+encoder = load_model("./Models/DISVAE/mnist-128-encoder.keras")
+decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
 
 encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
-src_class0 = 0
-src_class1 = 1
-dst_class = 2
+src_class0 = 2
+src_class1 = 7
+dst_class = 5
 
 tc = 0.8
 
@@ -85,4 +84,4 @@ model.compile(loss = "categorical_crossentropy", optimizer = "adam", metrics = [
 
 model.fit(X_classes, Y_classes, shuffle = True, batch_size = batch_size, epochs = num_epochs, validation_split = 0.1)
 
-model.save("./Models/Classifieur/residual-classifier-16.keras")
+model.save("./Models/Classifieur/residual-classifier-128.keras")
