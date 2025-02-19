@@ -91,6 +91,7 @@ Y_classes = to_categorical(np.concatenate((np.full(ilen_src0, 0), np.full(ilen_s
 X_classes_translated = np.concatenate((X_src_class0[-(ilen_src0 // 2):], X_src_class1[-(ilen_src1 // 2):]))
 X_classes_translated = tf.image.resize(X_classes_translated, (28, 28))
 Y_classes_translated = to_categorical(np.concatenate((np.full(ilen_src0 // 2, 0), np.full(ilen_src1 // 2, 1))), 3)
+Y_classes_translated_dst = to_categorical(np.concatenate((np.full(ilen_src0 // 2, 2), np.full(ilen_src1 // 2, 2))), 3)
 
 X_classes_full = np.concatenate((X_src_class0, X_src_class1, X_dst_class))
 X_classes_full = tf.image.resize(X_classes_full, (28, 28))
@@ -156,7 +157,6 @@ cm = confusion_matrix(Y_true_classes, Y_pred_classes, labels=labels)
 
 cm = cm[true_labels]
 
-#cm = confusion_matrix(Y_true_classes, Y_pred_classes, labels=labels)
 dst_index = np.where(true_labels == dst_class)[0][0]
 cm = np.vstack((cm_full[dst_index] - cm[dst_index], cm[dst_index, :]))
 
@@ -183,12 +183,12 @@ average_certainty = np.mean(certainty)
 
 accuracy = accuracy_score(Y_true_classes, Y_pred_classes)
 
-cm = confusion_matrix(Y_true_classes, Y_pred_classes)
+cm_full = confusion_matrix(Y_true_classes, Y_pred_classes)
 
 labels = [src_class0, src_class1, dst_class]
 
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+row_sums = cm_full.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm_full / row_sums * 100)
 
 annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
 
@@ -200,6 +200,32 @@ plt.suptitle(f"Détection des traces sur des chiffres source et translatés ({sr
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-classifier-confusion.png")
+
+
+
+
+Y_pred = classifier.predict(X_classes_translated)
+
+Y_pred_classes = np.argmax(Y_pred, axis = 1)
+Y_true_classes = np.argmax(Y_classes_translated_dst, axis = 1)
+
+cm = confusion_matrix(Y_true_classes, Y_pred_classes, labels=labels)
+
+cm = np.vstack((cm_full[2] - cm[0], cm[0]))
+
+row_sums = cm.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+
+annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", xticklabels=labels, yticklabels=["Non translatés", "Translatés"], vmin=0.0, vmax=100.0)
+plt.xlabel("Classe prédite")
+plt.suptitle(f"Détection des traces sur {dst_class} ({src_class0}, {src_class1}) → {dst_class}", fontsize=18)
+plt.tight_layout()
+plt.savefig("./Results/mnist-trace-classifier-translated-dst-confusion.png")
+
+
 
 
 
@@ -229,10 +255,6 @@ plt.suptitle(f"Détection des traces sur des chiffres translatés uniquement ({s
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-translated-classifier-confusion.png")
-
-
-#X_classes = tf.image.resize(X_classes, (64, 64))
-#X_encoded_classes = encoder.predict(X_classes)
 
 image_path = "./Images/2.jpg"
 image = cv2.imread(image_path)
