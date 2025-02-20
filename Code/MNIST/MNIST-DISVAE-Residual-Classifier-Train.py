@@ -33,9 +33,9 @@ decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
 
 encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
-src_class0 = 2
-src_class1 = 7
-dst_class = 5
+src_class0 = 0
+src_class1 = 1
+dst_class = 2
 
 tc = 0.8
 
@@ -84,4 +84,4 @@ model.compile(loss = "categorical_crossentropy", optimizer = "adam", metrics = [
 
 model.fit(X_classes, Y_classes, shuffle = True, batch_size = batch_size, epochs = num_epochs, validation_split = 0.1)
 
-model.save("./Models/Classifieur/residual-classifier-128.keras")
+model.save(f"./Models/Classifieur/residual-classifier-128-{src_class0}{src_class1}{dst_class}.keras")
