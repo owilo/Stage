@@ -196,4 +196,4 @@ for j, idx in enumerate(digits):
 
 plt.suptitle("CVAE", fontsize=16)
 plt.tight_layout()
-plt.show()
+plt.savefig("./Results/mnist-cvae.png")
