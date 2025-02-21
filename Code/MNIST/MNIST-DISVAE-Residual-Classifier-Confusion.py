@@ -11,7 +11,7 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from keras.utils import to_categorical
-from sklearn.metrics import precision_score, accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.manifold import TSNE
 
 import cv2
@@ -39,9 +39,9 @@ decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
 
 encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
 
-src_class0 = 0
-src_class1 = 1
-dst_class = 2
+src_class0 = 2
+src_class1 = 7
+dst_class = 5
 
 tc = 0.8
 
@@ -83,10 +83,12 @@ true_labels = np.array([src_class0, src_class1, dst_class])
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
 res_classifier = load_model(f"./Models/Classifieur/residual-classifier-128-{src_class0}{src_class1}{dst_class}.keras")
+detect_classifier = load_model(f"./Models/Classifieur/residual-detection-classifier-128-{src_class0}{src_class1}{dst_class}.keras")
 
 X_classes = np.concatenate((X_src_class0[-ilen_src0:], X_src_class1[-ilen_src1:], X_dst_class[-ilen_dst:]))
 X_classes = tf.image.resize(X_classes, (28, 28))
 Y_classes = to_categorical(np.concatenate((np.full(ilen_src0, 0), np.full(ilen_src1, 1), np.full(ilen_dst, 2))), 3)
+Y_classes_detect = np.concatenate((np.full(ilen_src0 - ilen_src0 // 2, 0), np.full(ilen_src0 // 2, 1), np.full(ilen_src1 - ilen_src1 // 2, 0), np.full(ilen_src1 // 2, 1), np.full(ilen_dst, 0)))
 
 X_classes_translated = np.concatenate((X_src_class0[-(ilen_src0 // 2):], X_src_class1[-(ilen_src1 // 2):]))
 X_classes_translated = tf.image.resize(X_classes_translated, (28, 28))
@@ -264,6 +266,36 @@ plt.suptitle(f"Détection des traces sur des chiffres inchangés uniquement ({sr
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig(f"./Results/mnist-trace-unchanged-classifier-confusion-{src_class0}{src_class1}{dst_class}.png")
+
+
+
+Y_pred = detect_classifier.predict(X_classes)
+
+Y_pred_classes = (Y_pred >= 0.5).astype(int)
+
+accuracy = accuracy_score(Y_classes_detect, Y_pred_classes)
+
+average_certainty = 1.0 - np.mean(np.abs(Y_pred - Y_pred_classes))
+
+cm = confusion_matrix(Y_classes_detect, Y_pred_classes)
+
+row_sums = cm.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+
+annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+
+detection_labels = ["Non détecté", "Détecté"]
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", xticklabels=detection_labels, yticklabels=detection_labels, vmin=0.0, vmax=100.0)
+plt.xlabel("Classe prédite")
+plt.ylabel("Classe cible")
+plt.suptitle(f"Détection de la translation ({src_class0}, {src_class1}) → {dst_class}", fontsize=18)
+plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+plt.tight_layout()
+plt.savefig(f"./Results/mnist-trace-detection-translation-confusion-{src_class0}{src_class1}{dst_class}.png")
+
+
 
 image_path = "./Images/2.jpg"
 image = cv2.imread(image_path)

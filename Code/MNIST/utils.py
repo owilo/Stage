@@ -7,6 +7,7 @@ from matplotlib.colors import BoundaryNorm
 import matplotlib.patches as mpatches
 
 def cache_array(filename, array_generator, save_cache=True, load_cache=True, verbose=True):
+    os.makedirs("./Cache", exist_ok=True)
     file_path = os.path.join("./Cache", filename)
     if not load_cache:
         return array_generator()

@@ -57,7 +57,9 @@ X_src_class1[:(len_src1 // 2)] = decoder.predict(utils.encoded(X_src_class1[:(le
 X_classes = np.concatenate((X_src_class0[:len_src0], X_src_class1[:len_src1], X_dst_class[:len_dst]))
 X_classes = tf.image.resize(X_classes, (28, 28))
 
-Y_classes = to_categorical(np.concatenate((np.full(len_src0, 0), np.full(len_src1, 1), np.full(len_dst, 2))), 3)
+Y_classes = np.concatenate((np.full(len_src0 - len_src0 // 2, 1), np.full(len_src0 // 2, 0), np.full(len_src1 - len_src1 // 2, 1), np.full(len_src1 // 2, 0), np.full(len_dst, 0)))
+
+X_classes = tf.image.resize(X_train, (28, 28))
 
 img_shape = (28, 28, 1)
 
@@ -72,7 +74,7 @@ x = MaxPooling2D((2, 2))(x)
 x = Flatten()(x)
 x = Dropout(0.5)(x)
 
-x = Dense(3, activation = "softmax")(x)
+x = Dense(1, activation = "sigmoid")(x)
 
 batch_size = 16
 num_epochs = 150
@@ -80,8 +82,8 @@ num_epochs = 150
 model = Model(input_img, x)
 model.summary()
 
-model.compile(loss = "categorical_crossentropy", optimizer = "adam", metrics = ["accuracy"])
+model.compile(loss = "binary_crossentropy", optimizer = "adam", metrics = ["accuracy"])
 
 model.fit(X_classes, Y_classes, shuffle = True, batch_size = batch_size, epochs = num_epochs, validation_split = 0.1)
 
-model.save(f"./Models/Classifieur/residual-classifier-128-{src_class0}{src_class1}{dst_class}.keras")
+model.save(f"./Models/Classifieur/residual-detection-classifier-128-{src_class0}{src_class1}{dst_class}.keras")
