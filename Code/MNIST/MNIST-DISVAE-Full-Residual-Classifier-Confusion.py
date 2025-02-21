@@ -2,6 +2,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from matplotlib.patches import Ellipse
 
 import seaborn as sns
 
@@ -13,8 +14,10 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from sklearn.metrics import accuracy_score, confusion_matrix
 from keras.utils import to_categorical
+from sklearn.manifold import TSNE
 
 import itertools
+import cv2
 
 import utils
 
@@ -82,7 +85,7 @@ for src_class in range(10):
     X_classes2[src_class] = np.concatenate(src_classes)
 
 Y_classes2 = np.repeat(np.arange(10), np.array([len(src_class) for src_class in X_classes2]))
-Y_classes2 = to_categorical(Y_classes2, 10)
+Y_classes_cat2 = to_categorical(Y_classes2, 10)
 
 X_classes2 = np.array(list(itertools.chain(*X_classes2)))
 X_classes2 = tf.image.resize(X_classes2, (28, 28))
@@ -92,6 +95,7 @@ np.random.shuffle(indices)
 indices = tf.convert_to_tensor(indices, dtype=tf.int32)
 X_classes2 = tf.gather(X_classes2, indices)
 Y_classes2 = tf.gather(Y_classes2, indices)
+Y_classes_cat2 = tf.gather(Y_classes_cat2, indices)
 Y_classes_translated2 = tf.gather(Y_classes_translated2, indices)
 Y_classes_isTranslated2 = tf.gather(Y_classes_isTranslated2, indices)
 
@@ -102,7 +106,7 @@ detect_classifier = load_model("./Models/Classifieur/residual-detection-classifi
 Y_pred = res_classifier.predict(X_classes2)
 
 Y_pred_classes = np.argmax(Y_pred, axis = 1)
-Y_true_classes = np.argmax(Y_classes2, axis = 1)
+Y_true_classes = np.argmax(Y_classes_cat2, axis = 1)
 
 certainty = np.max(Y_pred, axis=1)
 average_certainty = np.mean(certainty)
@@ -123,7 +127,7 @@ plt.ylabel("Classe cible")
 plt.suptitle(f"Détection des classes sources", fontsize=18)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
-plt.savefig(f"./Results/mnist-trace-classifier-confusion.png")
+plt.savefig("./Results/mnist-trace-classifier-confusion.png")
 
 Y_pred = classifier.predict(X_classes2)
 
@@ -148,7 +152,7 @@ plt.ylabel("Classe cible")
 plt.suptitle(f"Classification ", fontsize=18)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
-plt.savefig(f"./Results/mnist-trace-normal-classifier-confusion.png")
+plt.savefig("./Results/mnist-trace-normal-classifier-confusion.png")
 
 
 Y_pred = detect_classifier.predict(X_classes2)
@@ -175,4 +179,157 @@ plt.ylabel("Classe cible")
 plt.suptitle(f"Détection de la translation", fontsize=18)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
-plt.savefig(f"./Results/mnist-trace-detection-translation-confusion.png")
+plt.savefig("./Results/mnist-trace-detection-translation-confusion.png")
+
+
+
+
+
+image_path = "./Images/2.jpg"
+image = cv2.imread(image_path)
+
+image64 = cv2.resize(image, (64, 64))
+image = cv2.cvtColor(image64, cv2.COLOR_BGR2GRAY)
+threshold_value = 128
+_, image = cv2.threshold(image, threshold_value, 255, cv2.THRESH_BINARY)
+image = cv2.bitwise_not(image)
+
+image = image.astype("float32") / 255.
+image = np.expand_dims(image, axis=-1)
+image = np.expand_dims(image, axis=0)
+
+fig, axes = plt.subplots(1, 13, figsize=(20, 3))
+axes[0].imshow(cv2.cvtColor(image64, cv2.COLOR_BGR2RGB))
+axes[0].set_title("Image originale")
+axes[0].axis("off")
+
+predicted = utils.encoded(image, "", encoder, decoder, 3, 1, False)
+
+axes[1].imshow(image[0], cmap="gray")
+axes[1].set_title("Image seuillée")
+axes[1].axis("off")
+
+src_class, p, linp = utils.classify(image, classifier)
+src_class_g, p_g, linp_g = utils.classify(image, res_classifier)
+axes[1].text(0.5, -0.15, f"({src_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[1].transAxes)
+axes[1].text(0.5, -0.3, f"({src_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[1].transAxes)
+
+decoded = decoder.predict(predicted)
+
+axes[2].imshow(decoded[0], cmap="gray")
+axes[2].set_title("Reconstruction")
+axes[2].axis("off")
+
+guessed_class, p, linp = utils.classify(decoded, classifier)
+guessed_class_g, p_g, linp_g = utils.classify(decoded, res_classifier)
+axes[2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[2].transAxes)
+axes[2].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[2].transAxes)
+
+translated_encoded = []
+for dst_class in range(10):
+    translated = predicted + encoded_means[dst_class] - encoded_means[src_class]
+    if dst_class != src_class:
+        translated_encoded.append(translated)
+    translated_decoded = decoder.predict(translated)
+
+    axes[dst_class + 3].imshow(translated_decoded[0], cmap="gray")
+    axes[dst_class + 3].set_title(f"{dst_class}")
+    axes[dst_class + 3].axis("off")
+
+    guessed_class, p, linp = utils.classify(translated_decoded, classifier)
+    guessed_class_g, p_g, linp_g = utils.classify(translated_decoded, res_classifier)
+    axes[dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[dst_class + 3].transAxes)
+    axes[dst_class + 3].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[dst_class + 3].transAxes)
+
+translated_encoded = np.array(translated_encoded).squeeze()
+
+plt.tight_layout()
+plt.savefig("./Results/mnist-trace-translated-image.png")
+
+X_classes2 = tf.image.resize(X_classes2, (64, 64))
+X_encoded_classes = encoder.predict(X_classes2)
+X_encoded = np.concatenate((X_encoded_classes, predicted, translated_encoded))
+
+tsne = TSNE(n_components = 2, random_state = 1337, max_iter = 300)
+X_tsne_full = tsne.fit_transform(X_encoded)
+X_predicted = X_tsne_full[-10]
+X_translated = X_tsne_full[-9:]
+X_tsne = X_tsne_full[:-10]
+
+plt.figure(figsize=(8, 8))
+
+scatter = plt.scatter(
+    X_tsne[:, 0],
+    X_tsne[:, 1],
+    c=Y_classes2,
+    cmap="Paired",
+    alpha=0.35,
+    s=20
+)
+
+unique_classes = np.unique(Y_valid)
+norm = Normalize(vmin = min(unique_classes), vmax = max(unique_classes))
+
+for class_label in unique_classes:
+    plt.scatter([], [], color=plt.cm.Paired(norm(class_label)), label=str(class_label))
+
+std = 1.5
+for class_label in unique_classes:
+    mask = (Y_classes_translated2 == class_label)
+    class_data = X_tsne[mask]
+
+    mean = np.mean(class_data, axis=0)
+    cov = np.cov(class_data, rowvar=False)
+    
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    order = eigvals.argsort()[::-1]
+    eigvals, eigvecs = eigvals[order], eigvecs[:, order]
+    
+    angle = np.degrees(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
+    
+    width, height = 2 * std * np.sqrt(eigvals)
+
+    color = plt.cm.Paired(norm(class_label))
+    ellipse = Ellipse(xy=mean, width=width, height=height, angle=angle, facecolor=color, edgecolor=color, alpha=0.35, lw=3, zorder=0)
+    plt.gca().add_patch(ellipse)
+
+plt.title(f"t-SNE : Translations de plusieurs sources vers les clusters des classes")
+plt.legend()
+plt.tight_layout()
+plt.savefig(f"./Results/mnist-translation-res-full-tsne-translations.png")
+
+
+
+plt.figure(figsize=(8, 8))
+
+scatter = plt.scatter(
+    X_tsne[:, 0],
+    X_tsne[:, 1],
+    c=Y_classes_translated2,
+    cmap="Paired",
+    alpha=0.35,
+    s=20
+)
+
+unique_classes = np.unique(Y_valid)
+norm = Normalize(vmin = min(unique_classes), vmax = max(unique_classes))
+
+for class_label in unique_classes:
+    plt.scatter([], [], color=plt.cm.Paired(norm(class_label)), label=str(class_label))
+
+for i in range(9):
+    plt.scatter(X_predicted[0], X_predicted[1], marker="+", color="red", s=150)
+    plt.scatter(X_translated[i][0], X_translated[i][1], marker="+", color="blue", s=150)
+
+    plt.arrow(X_predicted[0], X_predicted[1],
+            X_translated[i][0] - X_predicted[0],
+            X_translated[i][1] - X_predicted[1],
+            color="purple", width=0.01, head_width=0.2, length_includes_head=True)
+
+plt.scatter([], [], marker="+", color="red", s=150, label="Image source")
+plt.scatter([], [], marker="+", color="blue", s=150, label="Image translatée")
+
+plt.title(f"t-SNE : Translations de l'image réelle vers les clusters des classes")
+plt.legend()
+plt.tight_layout()
+plt.savefig(f"./Results/mnist-translation-res-full-tsne.png")
