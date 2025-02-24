@@ -34,8 +34,8 @@ dst_class = 3
 
 batch_size = 32
 
-encoder = load_model("./Models/DISVAE/mnist-128-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
+encoder = load_model("./Models/DISVAE/mnist-16-encoder.keras")
+decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
 
 X_encoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 1, batch_size)
 X_reencoded_valid = utils.encoded(X_valid, "valid_disvae", encoder, decoder, 2, batch_size)
