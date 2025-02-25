@@ -248,13 +248,14 @@ plt.savefig("./Results/mnist-trace-translated-image.png")
 
 X_classes2 = tf.image.resize(X_classes2, (64, 64))
 X_encoded_classes = encoder.predict(X_classes2)
-X_encoded = np.concatenate((X_encoded_classes, predicted, translated_encoded))
+X_encoded = np.concatenate((X_encoded_classes, predicted, translated_encoded, encoded_means.squeeze()))
 
 tsne = TSNE(n_components = 2, random_state = 1337, max_iter = 300)
 X_tsne_full = tsne.fit_transform(X_encoded)
-X_predicted = X_tsne_full[-10]
-X_translated = X_tsne_full[-9:]
-X_tsne = X_tsne_full[:-10]
+X_tsne = X_tsne_full[:-20]
+X_predicted = X_tsne_full[-20]
+X_translated = X_tsne_full[-19:-10]
+X_encoded_means = X_tsne_full[-10:]
 
 plt.figure(figsize=(8, 8))
 
@@ -293,6 +294,16 @@ for class_label in unique_classes:
     ellipse = Ellipse(xy=mean, width=width, height=height, angle=angle, facecolor=color, edgecolor=color, alpha=0.35, lw=3, zorder=0)
     plt.gca().add_patch(ellipse)
 
+plt.scatter(
+    X_encoded_means[:, 0],
+    X_encoded_means[:, 1],
+    color="black",
+    marker='x',
+    s=100,
+    linewidths=2,
+    label="Centroïde"
+)
+
 plt.title(f"t-SNE : Translations de plusieurs sources vers les clusters des classes")
 plt.legend()
 plt.tight_layout()
@@ -328,6 +339,16 @@ for i in range(9):
 
 plt.scatter([], [], marker="+", color="red", s=150, label="Image source")
 plt.scatter([], [], marker="+", color="blue", s=150, label="Image translatée")
+
+plt.scatter(
+    X_encoded_means[:, 0],
+    X_encoded_means[:, 1],
+    color="black",
+    marker='x',
+    s=100,
+    linewidths=2,
+    label="Centroïde"
+)
 
 plt.title(f"t-SNE : Translations de l'image réelle vers les clusters des classes")
 plt.legend()
