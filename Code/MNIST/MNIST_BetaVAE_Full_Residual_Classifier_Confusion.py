@@ -103,6 +103,7 @@ classifier = load_model("./Models/Classifieur/classifier.keras")
 res_classifier = load_model("./Models/Classifieur/residual-classifier-128.keras")
 detect_classifier = load_model("./Models/Classifieur/residual-detection-classifier-128.keras")
 
+# Reconnaissance de la classe destination (classification naïve)
 Y_pred = res_classifier.predict(X_classes2)
 
 Y_pred_classes = np.argmax(Y_pred, axis = 1)
@@ -129,6 +130,7 @@ plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-classifier-confusion.png")
 
+# Reconnaissance de la classe source (détection de trace)
 Y_pred = classifier.predict(X_classes2)
 
 Y_pred_classes = np.argmax(Y_pred, axis = 1)
@@ -154,7 +156,7 @@ plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-normal-classifier-confusion.png")
 
-
+# Détection de la translation
 Y_pred = detect_classifier.predict(X_classes2)
 
 Y_pred_classes = (Y_pred >= 0.5).astype(int)
@@ -181,10 +183,7 @@ plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-detection-translation-confusion.png")
 
-
-
-
-
+# Translation d'une image réelle
 image_path = "./Images/2.jpg"
 image = cv2.imread(image_path)
 
@@ -198,54 +197,85 @@ image = image.astype("float32") / 255.
 image = np.expand_dims(image, axis=-1)
 image = np.expand_dims(image, axis=0)
 
-fig, axes = plt.subplots(1, 13, figsize=(20, 3))
-axes[0].imshow(cv2.cvtColor(image64, cv2.COLOR_BGR2RGB))
-axes[0].set_title("Image originale")
-axes[0].axis("off")
+fig, axes = plt.subplots(2, 13, figsize=(20, 5))
+plt.subplots_adjust(hspace=0.5)
+
+axes[0, 0].imshow(cv2.cvtColor(image64, cv2.COLOR_BGR2RGB))
+axes[0, 0].set_title("Image originale")
+axes[0, 0].axis("off")
 
 predicted = utils.encoded(image, "", encoder, decoder, 3, 1, False)
 
-axes[1].imshow(image[0], cmap="gray")
-axes[1].set_title("Image seuillée")
-axes[1].axis("off")
+axes[0, 1].imshow(image[0], cmap="gray")
+axes[0, 1].set_title("Image seuillée")
+axes[0, 1].axis("off")
 
 src_class, p, linp = utils.classify(image, classifier)
 src_class_g, p_g, linp_g = utils.classify(image, res_classifier)
-axes[1].text(0.5, -0.15, f"({src_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[1].transAxes)
-axes[1].text(0.5, -0.3, f"({src_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[1].transAxes)
+is_translated, p_d, certainty = utils.classify_binary(image, detect_classifier)
+axes[0, 1].text(0.5, -0.15, f"({src_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, 1].transAxes)
+axes[0, 1].text(0.5, -0.3, f"({src_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[0, 1].transAxes)
+axes[0, 1].text(0.5, -0.45, f"({is_translated.squeeze()}, {certainty.squeeze():.3f})", fontsize=14, color="green", ha="center", transform=axes[0, 1].transAxes)
 
 decoded = decoder.predict(predicted)
 
-axes[2].imshow(decoded[0], cmap="gray")
-axes[2].set_title("Reconstruction")
-axes[2].axis("off")
+axes[0, 2].imshow(decoded[0], cmap="gray")
+axes[0, 2].set_title("Reconstruction")
+axes[0, 2].axis("off")
 
 guessed_class, p, linp = utils.classify(decoded, classifier)
 guessed_class_g, p_g, linp_g = utils.classify(decoded, res_classifier)
-axes[2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[2].transAxes)
-axes[2].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[2].transAxes)
+is_translated, p_d, certainty = utils.classify_binary(decoded, detect_classifier)
+axes[0, 2].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, 2].transAxes)
+axes[0, 2].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[0, 2].transAxes)
+axes[0, 2].text(0.5, -0.45, f"({is_translated.squeeze()}, {certainty.squeeze():.3f})", fontsize=14, color="green", ha="center", transform=axes[0, 2].transAxes)
+
+axes[1, 0].axis("off")
+axes[1, 1].axis("off")
+axes[1, 2].axis("off")
 
 translated_encoded = []
+translated_decoded_images = []
 for dst_class in range(10):
     translated = predicted + encoded_means[dst_class] - encoded_means[src_class]
     if dst_class != src_class:
         translated_encoded.append(translated)
     translated_decoded = decoder.predict(translated)
+    translated_decoded_images.append(translated_decoded)
 
-    axes[dst_class + 3].imshow(translated_decoded[0], cmap="gray")
-    axes[dst_class + 3].set_title(f"{dst_class}")
-    axes[dst_class + 3].axis("off")
+    axes[0, dst_class + 3].imshow(translated_decoded[0], cmap="gray")
+    axes[0, dst_class + 3].set_title(f"{dst_class}")
+    axes[0, dst_class + 3].axis("off")
 
     guessed_class, p, linp = utils.classify(translated_decoded, classifier)
     guessed_class_g, p_g, linp_g = utils.classify(translated_decoded, res_classifier)
-    axes[dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[dst_class + 3].transAxes)
-    axes[dst_class + 3].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[dst_class + 3].transAxes)
+    is_translated, p_d, certainty = utils.classify_binary(translated_decoded, detect_classifier)
+
+    axes[0, dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[0, dst_class + 3].transAxes)
+    axes[0, dst_class + 3].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[0, dst_class + 3].transAxes)
+    axes[0, dst_class + 3].text(0.5, -0.45, f"({is_translated.squeeze()}, {certainty.squeeze():.3f})", fontsize=14, color="green", ha="center", transform=axes[0, dst_class + 3].transAxes)
+
+    translated_reencoded = encoder.predict(translated_decoded)
+    inverse_translated = translated_reencoded + encoded_means[src_class] - encoded_means[dst_class]
+    inverse_decoded = decoder.predict(inverse_translated)
+    
+    axes[1, dst_class + 3].imshow(inverse_decoded[0], cmap="gray")
+    axes[1, dst_class + 3].axis("off")
+
+    guessed_class, p, linp = utils.classify(inverse_decoded, classifier)
+    guessed_class_g, p_g, linp_g = utils.classify(inverse_decoded, res_classifier)
+    is_translated, p_d, certainty = utils.classify_binary(inverse_decoded, detect_classifier)
+
+    axes[1, dst_class + 3].text(0.5, -0.15, f"({guessed_class}, {p.max():.3f})", fontsize=14, color="blue", ha="center", transform=axes[1, dst_class + 3].transAxes)
+    axes[1, dst_class + 3].text(0.5, -0.3, f"({guessed_class_g}, {p_g.max():.3f})", fontsize=14, color="red", ha="center", transform=axes[1, dst_class + 3].transAxes)
+    axes[1, dst_class + 3].text(0.5, -0.45, f"({is_translated.squeeze()}, {certainty.squeeze():.3f})", fontsize=14, color="green", ha="center", transform=axes[1, dst_class + 3].transAxes)
 
 translated_encoded = np.array(translated_encoded).squeeze()
 
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-translated-image.png")
 
+# t-SNE
 X_classes2 = tf.image.resize(X_classes2, (64, 64))
 X_encoded_classes = encoder.predict(X_classes2)
 X_encoded = np.concatenate((X_encoded_classes, predicted, translated_encoded, encoded_means.squeeze()))
@@ -257,6 +287,7 @@ X_predicted = X_tsne_full[-20]
 X_translated = X_tsne_full[-19:-10]
 X_encoded_means = X_tsne_full[-10:]
 
+# t-SNE destination + Translation de l'image réelle
 plt.figure(figsize=(8, 8))
 
 scatter = plt.scatter(
@@ -309,8 +340,7 @@ plt.legend()
 plt.tight_layout()
 plt.savefig(f"./Results/mnist-translation-res-full-tsne-translations.png")
 
-
-
+# Origine des images translatées et inchangées sur le t-SNE
 plt.figure(figsize=(8, 8))
 
 scatter = plt.scatter(

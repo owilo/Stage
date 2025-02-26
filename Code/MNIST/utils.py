@@ -61,6 +61,13 @@ def classify(image, classifier):
     pred_lin /= pred_lin.sum()
     return guessed_class, pred, pred_lin
 
+def classify_binary(image, classifier):
+    image = tf.image.resize(image, (28, 28)).numpy()
+    pred = classifier.predict(image)
+    guessed_class = (pred >= 0.5).astype(int)
+    certainty = 1.0 - np.abs(guessed_class - pred)
+    return guessed_class, pred, certainty
+
 def pred_bar(pred, fig, ax):
     cmap = plt.cm.Paired
     cpred = np.insert(pred.cumsum(), 0, 0)
