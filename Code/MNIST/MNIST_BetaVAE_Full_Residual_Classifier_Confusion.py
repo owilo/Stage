@@ -1,3 +1,5 @@
+# c'est le code le plus triste que j'ai fait pendant ce stage
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -51,12 +53,17 @@ X_test_full = np.concatenate((X_split2, X_valid))
 Y_test_full = np.concatenate((Y_split2, Y_valid))
 
 X_classes = [X_test_full[Y_test_full == i] for i in range(10)]
+Y_classes = [Y_test_full[Y_test_full == i] for i in range(10)]
 
 tc = 0.75
 
 split_index = [int(tc * len(cls)) for cls in X_classes]
 
 X_classes2 = [cls[idx:] for cls, idx in zip(X_classes, split_index)]
+X_classes_original2 = np.array(list(itertools.chain(*X_classes2)))
+
+Y_classes2 = [cls[idx:] for cls, idx in zip(Y_classes, split_index)]
+Y_classes_original2 = np.array(list(itertools.chain(*Y_classes2)))
 
 encoder = load_model("./Models/DISVAE/mnist-128-h-encoder.keras")
 decoder = load_model("./Models/DISVAE/mnist-128-h-decoder.keras")
@@ -96,6 +103,7 @@ Y_classes2 = np.repeat(np.arange(10), np.array([len(src_class) for src_class in 
 Y_classes_cat2 = to_categorical(Y_classes2, 10)
 
 X_classes2 = np.array(list(itertools.chain(*X_classes2)))
+X_classes_original2 = tf.image.resize(X_classes_original2, (28, 28))
 X_classes2 = tf.image.resize(X_classes2, (28, 28))
 X_classes_inverse2 = tf.image.resize(X_classes_inverse2, (28, 28))
 
@@ -113,11 +121,38 @@ classifier = load_model("./Models/Classifieur/classifier.keras")
 res_classifier = load_model("./Models/Classifieur/residual-classifier-128.keras")
 detect_classifier = load_model("./Models/Classifieur/residual-detection-classifier-128.keras")
 
+# Reconnaissance de la classe sans translation (détection de trace)
+Y_pred = res_classifier.predict(X_classes_original2)
+
+Y_pred_classes = np.argmax(Y_pred, axis = 1)
+
+certainty = np.max(Y_pred, axis=1)
+average_certainty = np.mean(certainty)
+
+accuracy = accuracy_score(Y_classes_original2, Y_pred_classes)
+
+cm = confusion_matrix(Y_classes_original2, Y_pred_classes)
+
+row_sums = cm.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+
+annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
+plt.xlabel("Classe prédite")
+plt.ylabel("Classe cible")
+plt.suptitle(f"Reconnaissances des classes sans translation par détection de trace", fontsize=18)
+plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+plt.tight_layout()
+plt.savefig("./Results/mnist-trace-complete-unchanged-classifier-confusion.png")
+
+Y_pred_guessed_src_classes = Y_pred_classes
+
 # Reconnaissance de la classe source (détection de trace)
 Y_pred = res_classifier.predict(X_classes2)
 
 Y_pred_classes = np.argmax(Y_pred, axis = 1)
-#Y_true_classes = np.argmax(Y_classes_cat2, axis = 1)
 
 certainty = np.max(Y_pred, axis=1)
 average_certainty = np.mean(certainty)
@@ -140,6 +175,8 @@ plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-classifier-confusion.png")
 
+Y_pred_guessed_dst_classes = Y_pred_classes
+
 # Reconnaissance de la classe destination par translation inverse (détection de trace)
 Y_pred = res_classifier.predict(X_classes_inverse2)
 
@@ -161,7 +198,7 @@ plt.figure(figsize=(10, 8))
 sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
 plt.xlabel("Classe prédite")
 plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes sources", fontsize=18)
+plt.suptitle(f"Détection des classes destination après translation inverse", fontsize=18)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-dst.png")
@@ -187,10 +224,62 @@ plt.figure(figsize=(10, 8))
 sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
 plt.xlabel("Classe prédite")
 plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes sources", fontsize=18)
+plt.suptitle(f"Détection des classes sources après translation inverse", fontsize=18)
 plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 plt.tight_layout()
 plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-src.png")
+
+# Reconnaissance de la classe prédite par translation inverse (détection de trace)
+Y_pred = res_classifier.predict(X_classes_inverse2)
+
+Y_pred_classes = np.argmax(Y_pred, axis = 1)
+
+certainty = np.max(Y_pred, axis=1)
+average_certainty = np.mean(certainty)
+
+accuracy = accuracy_score(Y_pred_guessed_dst_classes, Y_pred_classes)
+
+cm = confusion_matrix(Y_pred_guessed_dst_classes, Y_pred_classes)
+
+row_sums = cm.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+
+annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
+plt.xlabel("Classe prédite")
+plt.ylabel("Classe cible")
+plt.suptitle(f"Détection des classes destination prédites, après translation inverse", fontsize=18)
+plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+plt.tight_layout()
+plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-predicted-dst.png")
+
+# Reconnaissance de la classe source prédite par translation inverse (détection de trace)
+Y_pred = res_classifier.predict(X_classes_inverse2)
+
+Y_pred_classes = np.argmax(Y_pred, axis = 1)
+
+certainty = np.max(Y_pred, axis=1)
+average_certainty = np.mean(certainty)
+
+accuracy = accuracy_score(Y_pred_guessed_src_classes, Y_pred_classes)
+
+cm = confusion_matrix(Y_pred_guessed_src_classes, Y_pred_classes)
+
+row_sums = cm.sum(axis=1, keepdims=True)
+percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
+
+annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
+plt.xlabel("Classe prédite")
+plt.ylabel("Classe cible")
+plt.suptitle(f"Détection des classes sources prédites, après translation inverse", fontsize=18)
+plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
+plt.tight_layout()
+plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-predicted-src.png")
 
 # Reconnaissance de la classe destination (classification naïve)
 Y_pred = classifier.predict(X_classes2)
@@ -222,7 +311,6 @@ plt.savefig("./Results/mnist-trace-normal-classifier-confusion.png")
 Y_pred = classifier.predict(X_classes_inverse2)
 
 Y_pred_classes = np.argmax(Y_pred, axis = 1)
-#Y_true_classes = np.argmax(Y_classes_cat2, axis = 1)
 
 certainty = np.max(Y_pred, axis=1)
 average_certainty = np.mean(certainty)
