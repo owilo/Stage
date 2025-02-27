@@ -40,7 +40,6 @@ total_certainties = []
 for src_class in range(10):
     certainties = []
 
-    plt.figure(figsize=(10, 8))
     conf_matrix = np.zeros((10, 10), dtype=int)
 
     digits = X_reencoded_valid[Y_valid == src_class]
@@ -72,6 +71,7 @@ for src_class in range(10):
     accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
     average_certainty = np.mean(certainties)
 
+    plt.figure(figsize=(10, 8))
     plt.suptitle(f"Classe source {src_class}", fontsize=22)
     plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
 
