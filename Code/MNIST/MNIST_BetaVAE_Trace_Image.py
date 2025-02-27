@@ -8,6 +8,8 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+from sklearn.manifold import TSNE
+
 import utils
 
 K.clear_session()
@@ -45,9 +47,15 @@ digits = [
     [1869, 3840, 4843, 5456, 7246, 7382, 8084, 8372, 8899, 8977]  # 9
 ]
 
-src_class = 0
-dst_class = 1
+src_class = 2
+dst_class = 7
 translation = encoded_means[dst_class] - encoded_means[src_class]
+X_src = X_reencoded_valid[Y_valid == src_class]
+translated = X_src + translation
+translated_minus_source = translated - encoded_means[src_class]
+source_minus_translated = encoded_means[src_class] - translated
+translated_minus_dest = translated - encoded_means[dst_class]
+dest_minus_translated = encoded_means[dst_class] - translated
 
 fig, axes = plt.subplots(6, 10, figsize=(25, 12))
 
@@ -59,38 +67,70 @@ axes[4, 0].set_ylabel("Trans. - Proto dest.", rotation=0, fontsize=26, labelpad=
 axes[5, 0].set_ylabel("Proto dest. - Trans.", rotation=0, fontsize=26, labelpad=20, ha="right")
 
 for i in range(10):
-    digit = digits[src_class][i]
-    X_digit = np.expand_dims(X_reencoded_valid[digit], axis=0)
+    mask = (Y_valid == src_class)
+    indices = np.where(mask)[0]
+    digit = np.where(indices == digits[src_class][i])[0][0]
 
-    axes[0, i].imshow(decoder.predict(X_digit)[0], cmap="gray")
+    axes[0, i].imshow(decoder.predict(np.expand_dims(X_src[digit], axis=0))[0], cmap="gray")
     axes[0, i].set_xticks([])
     axes[0, i].set_yticks([])
 
-    translated = X_digit + translation
-
-    axes[1, i].imshow(decoder.predict(translated)[0], cmap="gray")
+    axes[1, i].imshow(decoder.predict(np.expand_dims(translated[digit], axis=0))[0], cmap="gray")
     axes[1, i].set_xticks([])
     axes[1, i].set_yticks([])
 
-    translated_minus_source = translated - encoded_means[src_class]
-    axes[2, i].imshow(decoder.predict(translated_minus_source)[0], cmap="gray")
+    axes[2, i].imshow(decoder.predict(np.expand_dims(translated_minus_source[digit], axis=0))[0], cmap="gray")
     axes[2, i].set_xticks([])
     axes[2, i].set_yticks([])
-
-    source_minus_translated = encoded_means[src_class] - translated
-    axes[3, i].imshow(decoder.predict(source_minus_translated)[0], cmap="gray")
+    
+    axes[3, i].imshow(decoder.predict(np.expand_dims(source_minus_translated[digit], axis=0))[0], cmap="gray")
     axes[3, i].set_xticks([])
     axes[3, i].set_yticks([])
 
-    translated_minus_dest = translated - encoded_means[dst_class]
-    axes[4, i].imshow(decoder.predict(translated_minus_dest)[0], cmap="gray")
+    axes[4, i].imshow(decoder.predict(np.expand_dims(translated_minus_dest[digit], axis=0))[0], cmap="gray")
     axes[4, i].set_xticks([])
     axes[4, i].set_yticks([])
-
-    dest_minus_translated = encoded_means[dst_class] - translated
-    axes[5, i].imshow(decoder.predict(dest_minus_translated)[0], cmap="gray")
+    
+    axes[5, i].imshow(decoder.predict(np.expand_dims(dest_minus_translated[digit], axis=0))[0], cmap="gray")
     axes[5, i].set_xticks([])
     axes[5, i].set_yticks([])
 
 plt.tight_layout()
-plt.savefig("./Results/mnist-trace-images.png")
+plt.savefig(f"./Results/mnist-trace-images{src_class}{dst_class}.png")
+
+data = np.concatenate([
+    X_src,
+    translated,
+    translated_minus_source,
+    source_minus_translated,
+    translated_minus_dest,
+    dest_minus_translated
+], axis=0)
+
+n_points = X_src.shape[0]
+labels = ([f"Source ({src_class})"] * n_points +
+          [f"Translaté ({dst_class})"] * n_points +
+          ["Trans. - Proto source"] * n_points +
+          ["Proto source - Trans."] * n_points +
+          ["Trans. - Proto dest."] * n_points +
+          ["Proto dest. - Trans."] * n_points)
+
+tsne = TSNE(n_components=2, random_state=1337, max_iter=300)
+data_tsne = tsne.fit_transform(data)
+
+unique_labels = np.unique(labels)
+n_labels = len(unique_labels)
+
+cmap = plt.get_cmap('Paired')
+colors = {label: cmap(i) for i, label in enumerate(unique_labels)}
+
+plt.figure(figsize=(8, 8))
+for label in unique_labels:
+    idx = [i for i, l in enumerate(labels) if l == label]
+    plt.scatter(data_tsne[idx, 0], data_tsne[idx, 1], color=colors[label], label=label, alpha=0.35)
+
+plt.legend()
+plt.title(f"t-SNE de détection de traces (translation de {src_class} vers {dst_class})")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.savefig(f"./Results/mnist-trace-images-tsne-{src_class}{dst_class}.png")
