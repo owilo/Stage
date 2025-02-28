@@ -50,7 +50,8 @@ def encoded_means(x, y, name, encoder, decoder, n, batch_size = 1, save_last = T
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_means, save_last, verbose)
 
 def classify(image, classifier):
-    image = tf.image.resize(image, (28, 28)).numpy()
+    if (image.ndim >= 3):
+        image = tf.image.resize(image, (28, 28)).numpy()
     pred = classifier.predict(image)
     guessed_class = np.argmax(pred)
 
@@ -62,7 +63,8 @@ def classify(image, classifier):
     return guessed_class, pred, pred_lin
 
 def classify_binary(image, classifier):
-    image = tf.image.resize(image, (28, 28)).numpy()
+    if (image.ndim >= 3):
+        image = tf.image.resize(image, (28, 28)).numpy()
     pred = classifier.predict(image)
     guessed_class = (pred >= 0.5).astype(int)
     certainty = 1.0 - np.abs(guessed_class - pred)
