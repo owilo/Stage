@@ -31,6 +31,7 @@ decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
 
 X_reencoded_valid = utils.encoded(X_valid64, "valid_disvae", encoder, decoder, 3, batch_size)
 encoded_means = utils.encoded_means(X_train64, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
+encoded_std = utils.encoded_std(X_train, Y_train, "encoded_std_disvae", encoder, decoder, 2, 32)
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
 
@@ -45,14 +46,14 @@ for src_class in range(10):
     for dst_class in range(10):
         mean_encoded_dst = encoded_means[dst_class]
 
-        translation = mean_encoded_dst - mean_encoded_src
-        translated = digits + translation
+        #translation = mean_encoded_dst - mean_encoded_src
+        translated = encoded_means[dst_class] + (encoded_std[dst_class] / encoded_std[src_class]) * (digits - encoded_means[src_class])
 
         decoded = decoder.predict(translated, batch_size=batch_size)
 
         reencoded = encoder.predict(decoded, batch_size=batch_size)
 
-        invTranslated = reencoded - translation
+        invTranslated = encoded_means[src_class] + (encoded_std[src_class] / encoded_std[dst_class]) * (reencoded - encoded_means[dst_class])
 
         redecoded = decoder.predict(invTranslated, batch_size=batch_size)
         redecoded = tf.image.resize(redecoded, (28, 28)).numpy()

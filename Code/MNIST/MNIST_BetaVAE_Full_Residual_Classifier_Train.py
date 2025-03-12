@@ -55,6 +55,7 @@ encoder = load_model("./Models/DISVAE/mnist-128-h-encoder.keras")
 decoder = load_model("./Models/DISVAE/mnist-128-h-decoder.keras")
 
 encoded_means = utils.encoded_means(X_split1, Y_split1, "h_encoded_means_disvae", encoder, decoder, 2, 32)
+encoded_std = utils.encoded_std(X_split1, Y_split1, "h_encoded_std_disvae", encoder, decoder, 2, 32)
 
 for src_class in range(10):
     src_classes = np.array_split(X_classes1[src_class], 10)
@@ -65,8 +66,9 @@ for src_class in range(10):
             continue
 
         X_encoded_src = utils.encoded(src_classes[dst_class], "", encoder, decoder, 3, 32, False)
-        translation = encoded_means[dst_class] - encoded_means[src_class]
-        X_translated = X_encoded_src + translation
+        #translation = encoded_means[dst_class] - encoded_means[src_class]
+        #X_translated = X_encoded_src + translation
+        X_translated = encoded_means[dst_class] + (encoded_std[dst_class] / encoded_std[src_class]) * (X_encoded_src - encoded_means[src_class])
         src_classes[dst_class] = decoder.predict(X_translated, batch_size = 32)
 
     X_classes1[src_class] = np.concatenate(src_classes)
@@ -109,4 +111,4 @@ model.compile(loss = "categorical_crossentropy", optimizer = "adam", metrics = [
 
 model.fit(X_classes1, Y_classes1, shuffle = True, batch_size = batch_size, epochs = num_epochs, validation_split = 0.1)
 
-model.save("./Models/Classifieur/residual-classifier-128.keras")
+model.save("./Models/Classifieur/residual-classifier-std-128.keras")

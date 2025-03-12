@@ -69,6 +69,7 @@ encoder = load_model("./Models/DISVAE/mnist-128-h-encoder.keras")
 decoder = load_model("./Models/DISVAE/mnist-128-h-decoder.keras")
 
 encoded_means = utils.encoded_means(X_split1, Y_split1, "h_encoded_means_disvae", encoder, decoder, 2, 32)
+encoded_std = utils.encoded_std(X_split1, Y_split1, "h_encoded_std_disvae", encoder, decoder, 2, 32)
 
 X_classes_inverse2 = np.empty((0, 64, 64, 1))
 Y_classes_translated2 = np.array([])
@@ -87,12 +88,11 @@ for src_class in range(10):
             continue
 
         X_encoded_src = utils.encoded(src_classes[dst_class], "", encoder, decoder, 3, 32, False)
-        translation = encoded_means[dst_class] - encoded_means[src_class]
-        X_translated = X_encoded_src + translation
+        X_translated = encoded_means[dst_class] + (encoded_std[dst_class] / encoded_std[src_class]) * (X_encoded_src - encoded_means[src_class])
         src_classes[dst_class] = decoder.predict(X_translated, batch_size = 32)
 
         X_reencoded_src = encoder.predict(src_classes[dst_class], batch_size = 32)
-        X_inverse_translated = X_reencoded_src - translation
+        X_inverse_translated = encoded_means[src_class] + (encoded_std[src_class] / encoded_std[dst_class]) * (X_reencoded_src - encoded_means[dst_class])
         X_redecoded = decoder.predict(X_inverse_translated, batch_size = 32)
 
         X_classes_inverse2 = np.concatenate((X_classes_inverse2, X_redecoded), axis=0)
@@ -118,7 +118,7 @@ Y_classes_translated2 = tf.gather(Y_classes_translated2, indices)
 Y_classes_isTranslated2 = tf.gather(Y_classes_isTranslated2, indices)
 
 classifier = load_model("./Models/Classifieur/classifier.keras")
-res_classifier = load_model("./Models/Classifieur/residual-classifier-128.keras")
+res_classifier = load_model("./Models/Classifieur/residual-classifier-std-128.keras")
 detect_classifier = load_model("./Models/Classifieur/residual-detection-classifier-128.keras")
 
 # Reconnaissance de la classe sans translation (détection de trace)

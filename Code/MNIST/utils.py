@@ -49,6 +49,17 @@ def encoded_means(x, y, name, encoder, decoder, n, batch_size = 1, save_last = T
 
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_means, save_last, verbose)
 
+def encoded_std(x, y, name, encoder, decoder, n, batch_size=1, save_last=True, save_encoding=False, save_decoding=False, verbose=True):
+    def calculate_stds():
+        x_encoded = encoded(x, name, encoder, decoder, n, batch_size, False, save_encoding, save_decoding, verbose)
+        encoded_stds = [None] * 10
+        for i in range(10):
+            encoded_stds[i] = np.std(x_encoded[y == i], axis=0, ddof=1)
+            encoded_stds[i] = np.expand_dims(encoded_stds[i], axis=0)
+        return np.array(encoded_stds)
+
+    return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_stds, save_last, verbose)
+
 def classify(image, classifier):
     if (image.ndim >= 3):
         image = tf.image.resize(image, (28, 28)).numpy()

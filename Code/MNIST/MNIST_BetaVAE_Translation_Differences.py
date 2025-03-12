@@ -35,23 +35,35 @@ X_reencoded_valid = utils.encoded(X_valid, "test_disvae", encoder, decoder, 2, b
 src_class = 0
 dst_class = 1
 
-encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, 32)
-
 X_class_src = X_reencoded_train[Y_train == src_class]
 X_class_dst = X_reencoded_train[Y_train == dst_class]
 
+encoded_means = utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, 32)
+
 encoded_means_src = encoded_means[src_class]
 encoded_means_dst = encoded_means[dst_class]
-translation = encoded_means_dst - encoded_means_src
-translated = X_reencoded_valid[Y_valid == src_class] + translation
+
+encoded_std = utils.encoded_std(X_train, Y_train, "encoded_std_disvae", encoder, decoder, 2, 32)
+encoded_std_src = encoded_std[src_class]
+encoded_std_dst = encoded_std[dst_class]
+
+sources = X_reencoded_valid[Y_valid == src_class]
+
+translated = sources + encoded_means_dst - encoded_means_src
+translated_std = encoded_means_dst + (encoded_std_dst / encoded_std_src) * (sources - encoded_means_src)
+
 
 d = X_class_src.shape[1]
 
-positions_dst = 2 * np.arange(1, d + 1)
-positions_src = positions_dst - 0.25
-positions_trans = positions_dst + 0.25
+positions = 2 * np.arange(1, d + 1)
 
-plt.figure(figsize=(16, 8))
+positions_src = positions - 0.35
+positions_dst = positions + 0.35
+positions_trans = positions - 0.125
+positions_trans_std = positions + 0.125
+
+
+plt.figure(figsize=(14, 8))
 plt.axhline(y=0, color='gray')
 
 bp_src = plt.boxplot(X_class_src, positions=positions_src, patch_artist=True, 
@@ -69,6 +81,11 @@ bp_trans = plt.boxplot(translated, positions=positions_trans, patch_artist=True,
                        boxprops=dict(facecolor='lightcoral', color='red'),
                        medianprops=dict(color='darkred', linewidth=3))
 
+bp_trans_std = plt.boxplot(translated_std, positions=positions_trans_std, patch_artist=True, 
+                       showfliers=False, widths=0.2,
+                       boxprops=dict(facecolor='mediumpurple', color='purple'),
+                       medianprops=dict(color='darkviolet', linewidth=3))
+
 plt.xlabel("Dimension")
 plt.ylabel("Valeur")
 plt.title("Translation")
@@ -77,8 +94,9 @@ plt.xticks(2 * np.arange(1, d + 1), [f"{i}" for i in range(1, d + 1)])
 
 legend_handles = [
     mpatches.Patch(color='lightblue', label='Source'),
-    mpatches.Patch(color='lightgreen', label='Destination'),
-    mpatches.Patch(color='lightcoral', label='Translation')
+    mpatches.Patch(color='lightcoral', label='Translaté'),
+    mpatches.Patch(color='mediumpurple', label='Translaté & Normalisé'),
+    mpatches.Patch(color='lightgreen', label='Destination')
 ]
 plt.legend(handles=legend_handles)
 
