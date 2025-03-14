@@ -20,11 +20,8 @@ x_test = x_test.reshape(-1, 28, 28, 1)
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
 
-#z_test = latent.encode_n(autoencoder, x_test, 3)
-#z_class_gaussians = latent.class_gaussian(latent.encode_n(autoencoder, x_train, 2, False), y_train)
-
 z_test = latent.encode_n(autoencoder, x_test, 3, save_cache=True)
-z_class_gaussians = latent.class_gaussian_n(autoencoder, x_train, y_train, 2, save_cache=True)
+z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
 digits = [
     1333, # 0
@@ -49,9 +46,7 @@ for src_class in range(10):
     for dst_class in range(10):
         z = z_test[src_digit:src_digit + 1]
 
-        z_translated = latent.translate(z, src_class, dst_class, z_class_gaussians)
-
-        #z_translated = z
+        z_translated = latent.translate(z, src_class, dst_class, z_class_distributions)
 
         x_decoded = autoencoder.decoder.predict(z_translated, batch_size=32)
         x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()

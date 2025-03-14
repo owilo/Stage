@@ -7,7 +7,7 @@ def encode_n(autoencoder, data, n, save_cache=False):
     """
     key = cache.model_hash(autoencoder) + cache.data_hash(data) + str(n)
     
-    def iencode():
+    def _encode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
         _, _, result = autoencoder.encoder.predict(data) # todo
@@ -16,7 +16,7 @@ def encode_n(autoencoder, data, n, save_cache=False):
             _, _, result = autoencoder.encoder.predict(result)
         return result
 
-    return cache.load_from_cache(key, iencode, save_cache)
+    return cache.load_from_cache(key, _encode, save_cache)
 
 
 def decode_n(autoencoder, data, n, save_cache=False):
@@ -25,7 +25,7 @@ def decode_n(autoencoder, data, n, save_cache=False):
     """
     key = cache.model_hash(autoencoder) + cache.data_hash(data) + str(n)
     
-    def idecode():
+    def _decode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
         result = autoencoder.decoder.predict(data)
@@ -34,16 +34,16 @@ def decode_n(autoencoder, data, n, save_cache=False):
             result = autoencoder.decoder.predict(result)
         return result
 
-    return cache.load_from_cache(key, idecode, save_cache)
+    return cache.load_from_cache(key, _decode, save_cache)
 
 
-def class_gaussian_n(autoencoder, x, y, n, save_cache=False):
+def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     if len(x) != len(y):
         raise ValueError(f"x ({len(x)}) et y ({len(y)}) doivent être de la même taille")
 
     key = "gms" + cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
 
-    def iclass_gaussian():
+    def _class_distributions():
         z = encode_n(autoencoder, x, n, False)
 
         result = {}
@@ -60,11 +60,11 @@ def class_gaussian_n(autoencoder, x, y, n, save_cache=False):
         
         return result
     
-    return cache.load_from_cache(key, iclass_gaussian, save_cache)
+    return cache.load_from_cache(key, _class_distributions, save_cache)
 
-def translate(z, source_y, destination_y, class_gaussian, use_std=True):
-    src_mean, src_std = class_gaussian[source_y]
-    dst_mean, dst_std = class_gaussian[destination_y]
+def translate(z, source_y, destination_y, class_distributions, use_std=True):
+    src_mean, src_std = class_distributions[source_y]
+    dst_mean, dst_std = class_distributions[destination_y]
     if use_std:
         return dst_mean + (dst_std / src_std) * (z - src_mean)
     else:
