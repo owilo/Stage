@@ -4,20 +4,21 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from matplotlib.widgets import CheckButtons
 
-from MNIST_CVAE_Train import Sampling, Encoder, Decoder, CVAE
+from Code.Training.CVAE import Sampling, Encoder, Decoder, CVAE
+from Code.Utils import cache
 
-cvae = load_model("./Models/CVAE/cvae16.keras")
+cvae = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16_2.keras")
 
-(_, _), (X_valid, _) = tf.keras.datasets.mnist.load_data()
+(_, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
 
 src_digit = 2012
-img = X_valid[src_digit]
+img = x_test[src_digit]
 img = img.astype('float32') / 255.0
 img = np.expand_dims(img, axis=-1)
 img_batch = np.expand_dims(img, axis=0)
 
-z_mean, z_log_var, z = cvae.encoder(img_batch)
-latent_vector = z_mean[0].numpy().copy()  # vecteur latent (style)
+z_mean, z_log_var, z = cvae.encoder.predict(img_batch)
+latent_vector = z_mean[0].copy()  # vecteur latent (style)
 latent_dim = latent_vector.shape[0]
 
 current_label = np.zeros(10, dtype=np.float32)
@@ -38,7 +39,7 @@ ax_latent.set_xticks(np.arange(0, latent_dim, max(1, latent_dim // 10)))
 
 ax_img = fig.add_axes([0.55, 0.3, 0.4, 0.6])
 
-decoded_img = cvae.decoder([
+decoded_img = cvae.decoder.predict([
     np.expand_dims(latent_vector, axis=0),
     np.expand_dims(current_label, axis=0)
 ])[0]
@@ -60,7 +61,7 @@ for label in check.labels:
 
 def update_image():
     global latent_vector, current_label
-    decoded = cvae.decoder([
+    decoded = cvae.decoder.predict([
         np.expand_dims(latent_vector, axis=0),
         np.expand_dims(current_label, axis=0)
     ])[0]

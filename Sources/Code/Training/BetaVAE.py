@@ -4,7 +4,7 @@ from tensorflow.keras import layers
 import numpy as np
 import os
 
-from Code.Utils import cache
+from Code.Utils import cache, utils
 
 @tf.keras.utils.register_keras_serializable()
 class Sampling(layers.Layer):
@@ -132,7 +132,7 @@ class BetaVAE(tf.keras.Model):
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
             reconstruction = self.decoder(z)
-            reconstruction_loss = 64 * 64 * tf.reduce_mean(
+            reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
                     keras.losses.binary_crossentropy(data, reconstruction), axis=(1, 2)
                 )
@@ -155,7 +155,7 @@ class BetaVAE(tf.keras.Model):
     def test_step(self, data):
         z_mean, z_log_var, z = self.encoder(data)
         reconstruction = self.decoder(z)
-        reconstruction_loss = 64 * 64 * tf.reduce_mean(
+        reconstruction_loss = tf.reduce_mean(
             tf.reduce_sum(
                 keras.losses.binary_crossentropy(data, reconstruction), axis=(1, 2)
             )
@@ -180,12 +180,11 @@ class BetaVAE(tf.keras.Model):
         return config
 
 if __name__ == "__main__":
+    np.random.seed(42)
+    tf.keras.utils.set_random_seed(42)
+
     (x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
-    x_train = x_train.astype("float32") / 255.
-    x_test = x_test.astype("float32") / 255.
-    
-    x_train = np.expand_dims(x_train, -1)
-    x_test = np.expand_dims(x_test, -1)
+    x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
     x_train = tf.image.resize(x_train, (64, 64))
     x_test = tf.image.resize(x_test, (64, 64))
