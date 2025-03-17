@@ -155,7 +155,7 @@ class BetaVAE(tf.keras.Model):
     def test_step(self, data):
         z_mean, z_log_var, z = self.encoder(data)
         reconstruction = self.decoder(z)
-        reconstruction_loss = tf.reduce_mean(
+        reconstruction_loss = 64 * 64 * tf.reduce_mean(
             tf.reduce_sum(
                 keras.losses.binary_crossentropy(data, reconstruction), axis=(1, 2)
             )
@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
     latent_dim = 128
     beta = 6.0
-    num_epochs = 10
+    num_epochs = 5
     batch_size = 32
 
     vae = BetaVAE(latent_dim=latent_dim, beta=beta)

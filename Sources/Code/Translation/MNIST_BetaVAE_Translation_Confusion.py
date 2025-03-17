@@ -6,34 +6,20 @@ from keras.datasets import mnist
 
 import tensorflow.keras.backend as K
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 
-import Utils
+from Code.Utils import cache, latent, utils
 
-K.clear_session()
 np.random.seed(42)
 
-(X_train, Y_train), (X_valid, Y_valid) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-X_train = X_train.astype("float32") / 255.
-X_train = X_train.reshape(-1, 28, 28, 1)
+x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-X_valid = X_valid.astype("float32") / 255.
-X_valid = X_valid.reshape(-1, 28, 28, 1)
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifieur" / "classifier.keras")
 
-X_train = tf.image.resize(X_train, (64, 64))
-X_valid = tf.image.resize(X_valid, (64, 64))
-
-batch_size = 32
-
-encoder = load_model("./Models/DISVAE/mnist-128-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-128-decoder.keras")
-
-X_reencoded_valid = Utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
-encoded_means = Utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
-encoded_std = Utils.encoded_std(X_train, Y_train, "encoded_std_disvae", encoder, decoder, 2, 32)
-
-classifier = load_model("./Models/Classifieur/classifier.keras")
+z_test = latent.encode_n(autoencoder, x_test, 3, save_cache=True)
+z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
 total_conf_matrix = np.zeros((10, 10), dtype=int)
 

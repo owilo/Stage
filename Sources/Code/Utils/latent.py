@@ -1,12 +1,13 @@
 from . import cache
 import numpy as np
+import tensorflow as tf
 
 def encode_n(autoencoder, data, n, save_cache=False):
     """
     Applique alternativement l'encodage et le décodage n fois pour obtenir le résultat final encodé.
     """
     key = cache.model_hash(autoencoder) + cache.data_hash(data) + str(n)
-    
+
     def _encode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")

@@ -25,25 +25,25 @@ digit_indices = np.array([
     5333  # 9
 ])
 
-selected_test = x_test[digit_indices]
+x_selected_test = x_test[digit_indices]
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifieur" / "classifier.keras")
 
-z_test = latent.encode_n(autoencoder, selected_test, 3, save_cache=False)
+z_test = latent.encode_n(autoencoder, x_selected_test, 3, save_cache=False)
 z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 
-source_classes = np.repeat(np.arange(10), 10)  # [0, 0, ..., 9, 9]
-destination_classes = np.tile(np.arange(10), 10)  # [0, 1, 2, ..., 9, 0, 1, ..., 9]
+y_src = np.repeat(np.arange(10), 10)  # [0, 0, ..., 9, 9]
+y_dst = np.tile(np.arange(10), 10)  # [0, 1, ..., 9, 0, 1, ..., 9]
 
-z_source_batch = np.repeat(z_test, 10, axis=0)
+z_src = np.repeat(z_test, 10, axis=0)
 
-z_translated_batch = latent.translate(z_source_batch, source_classes, destination_classes, z_class_distributions)
+z_translated = latent.translate(z_src, y_src, y_dst, z_class_distributions)
 
-x_decoded = autoencoder.decoder.predict(z_translated_batch)
-x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
+x_decoded = autoencoder.decoder.predict(z_translated)
+x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy() # todo pour le classifieur
 
 guessed_classes, _, certainties = utils.classify(x_decoded, classifier)
 
