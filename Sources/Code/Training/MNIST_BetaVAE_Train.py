@@ -27,7 +27,7 @@ num_epochs = 5
 img_shape = (64, 64, 1)
 batch_size = 32
 
-latent_dim = 64
+latent_dim = 128
 
 input_img = Input(shape = img_shape)
 

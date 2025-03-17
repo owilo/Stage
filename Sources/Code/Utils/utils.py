@@ -65,7 +65,7 @@ def encoded_std(x, y, name, encoder, decoder, n, batch_size=1, save_last=True, s
 
     return cache_array(f"{name}-{encoder.name}-{decoder.name}-{n}.npy", calculate_stds, save_last, verbose)
 
-# todo modify
+"""
 def classify(image, classifier):
     if (image.ndim >= 3):
         image = tf.image.resize(image, (28, 28)).numpy()
@@ -77,7 +77,7 @@ def classify(image, classifier):
     pred_lin[mask] = np.log(pred[mask])
     pred_lin -= pred_lin.min()
     pred_lin /= pred_lin.sum()
-    return guessed_class, pred, pred_lin
+    return guessed_class, pred, pred_lin"""
 
 # todo modify
 def classify_binary(image, classifier):
@@ -137,3 +137,35 @@ def split_dataset(x, y, p, seed=0):
 
 def group_by_class(x, y):
     return {cls: x[y == cls] for cls in np.unique(y)}
+
+def classify(x, classifier):
+    x = np.asarray(x, dtype=np.float32)
+
+    single_image = (x.ndim == 3)
+    if single_image:
+        x = np.expand_dims(x, axis=0)
+
+    predictions = classifier.predict(x, batch_size=x.shape[0])
+
+    if predictions.shape[-1] == 1:
+        guessed = (predictions >= 0.5).astype(int)
+        certainty = 1.0 - np.abs(guessed - predictions)
+
+        guessed = np.squeeze(guessed, axis=-1)
+        predictions = np.squeeze(predictions, axis=-1)
+        certainty = np.squeeze(certainty, axis=-1)
+    else:
+        guessed = np.argmax(predictions, axis=1)
+        certainty = np.max(predictions, axis=1)
+
+    if single_image:
+        return guessed[0], predictions[0], certainty[0]
+    return guessed, predictions, certainty
+
+def preprocess_dataset(x_train, x_test):
+    x_train = x_train.astype("float32") / 255.
+    x_train = x_train.reshape(-1, 28, 28, 1)
+
+    x_test = x_test.astype("float32") / 255.
+    x_test = x_test.reshape(-1, 28, 28, 1)
+    return x_train, x_test

@@ -25,19 +25,17 @@ def load_from_cache(data_id, supplier, save_cache=True):
     
     cache_file = CACHE_FOLDER / data_id
     if cache_file.exists():
-        print(f"Le fichier cache '{cache_file}' existe. Chargement des données...")
         with open(cache_file, "rb") as file:
             data = pickle.load(file)
-        print("Données chargées depuis le cache.")
+        print(f"Données chargées depuis '{cache_file}'.")
         return data
     else:
         print(f"Le fichier cache '{cache_file}' n'existe pas. Génération des données...")
         data = supplier()
         if save_cache:
-            print(f"Enregistrement des données dans le cache sous '{cache_file}'...")
             with open(cache_file, "wb") as file:
                 pickle.dump(data, file)
-            print("Données enregistrées dans le cache.")
+            print(f"Données sauvegardées vers '{cache_file}'.")
         return data
 
 def model_hash(model):

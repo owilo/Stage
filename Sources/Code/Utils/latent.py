@@ -63,9 +63,25 @@ def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     return cache.load_from_cache(key, _class_distributions, save_cache)
 
 def translate(z, source_y, destination_y, class_distributions, use_std=True):
-    src_mean, src_std = class_distributions[source_y]
-    dst_mean, dst_std = class_distributions[destination_y]
-    if use_std:
-        return dst_mean + (dst_std / src_std) * (z - src_mean)
+    z = np.asarray(z)
+
+    if np.isscalar(source_y) and np.isscalar(destination_y):
+        src_mean, src_std = class_distributions[source_y]
+        dst_mean, dst_std = class_distributions[destination_y]
+        if use_std:
+            return dst_mean + (dst_std / src_std) * (z - src_mean)
+        else:
+            return z + dst_mean - src_mean
     else:
-        return z + dst_mean - src_mean
+        source_y = np.array(source_y)
+        destination_y = np.array(destination_y)
+        
+        src_means = np.array([class_distributions[c][0] for c in source_y])
+        src_stds  = np.array([class_distributions[c][1] for c in source_y])
+        dst_means = np.array([class_distributions[c][0] for c in destination_y])
+        dst_stds  = np.array([class_distributions[c][1] for c in destination_y])
+        
+        if use_std:
+            return dst_means + (dst_stds / src_stds) * (z - src_means)
+        else:
+            return z + dst_means - src_means
