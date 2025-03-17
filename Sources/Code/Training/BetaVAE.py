@@ -138,7 +138,7 @@ class BetaVAE(tf.keras.Model):
                 )
             )
             kl_loss = self.beta * (-0.5 * tf.reduce_mean(
-                tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
+                tf.reduce_mean(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
             ))
             total_loss = reconstruction_loss + kl_loss
 
@@ -161,8 +161,8 @@ class BetaVAE(tf.keras.Model):
             )
         )
         kl_loss = self.beta * (-0.5 * tf.reduce_mean(
-            tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
-        ))
+            tf.reduce_mean(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
+        )) # or reduce_sum?
         total_loss = reconstruction_loss + kl_loss
         self.total_loss_tracker.update_state(total_loss)
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)

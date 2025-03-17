@@ -1,3 +1,7 @@
+# Caches
 **/Cache/*
 !**/Cache/.gitkeep
 **/__pycache__
+
+# Fichiers HTML
+**/Bokeh/**.html

@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
 from keras.datasets import mnist
 from keras.models import load_model
 from bokeh.plotting import figure, show
@@ -13,52 +12,42 @@ from bokeh.layouts import row
 import base64
 import cv2
 
-import Utils
+from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Utils import cache, latent, utils
 
-(X_train, Y_train), (X_valid, Y_valid) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-X_train = X_train.astype("float32") / 255.
-X_train = X_train.reshape(-1, 28, 28, 1)
+x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-X_valid = X_valid.astype("float32") / 255.
-X_valid = X_valid.reshape(-1, 28, 28, 1)
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
 
-X_train = tf.image.resize(X_train, (64, 64))
-X_valid = tf.image.resize(X_valid, (64, 64))
+z_test = latent.encode_n(autoencoder, x_test, 3, save_cache=True)
+z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
-batch_size = 32
+tsne = TSNE(n_components=2, random_state=1337, max_iter=300)
+x_tsne = tsne.fit_transform(z_test)
 
-encoder = load_model("./Models/DISVAE/mnist-16-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
-
-X_reencoded_all = Utils.encoded(X_valid, "valid_disvae", encoder, decoder, 3, batch_size)
-
-tSNE = TSNE(n_components=2, random_state=1337, max_iter=300)
-X_tSNE = tSNE.fit_transform(X_reencoded_all)
-
-indices = np.arange(len(X_valid))
-
-encoded_means = Utils.encoded_means(X_train, Y_train, "encoded_means_disvae", encoder, decoder, 2, batch_size)
+indices = np.arange(len(x_test))
 
 image_base64 = []
-for i in range(len(X_valid)):
-    img = X_valid[i]
+for i in range(len(x_test)):
+    img = x_test[i]
     img = np.uint8(255 * img)
     _, buffer = cv2.imencode('.png', img)
     img_base64 = base64.b64encode(buffer).decode('utf-8')
     image_base64.append('data:image/png;base64,' + img_base64)
 
 source = ColumnDataSource(data=dict(
-    x=X_tSNE[:, 0],
-    y=X_tSNE[:, 1],
+    x=x_tsne[:, 0],
+    y=x_tsne[:, 1],
     image=image_base64,
-    label=Y_valid,
+    label=y_test,
     index=indices,
-    classes=Y_valid,
-    latent=X_reencoded_all.tolist()
+    classes=y_test,
+    latent=z_test.tolist()
 ))
 
-mapper = linear_cmap(field_name='label', palette=Viridis256, low=min(Y_valid), high=max(Y_valid))
+mapper = linear_cmap(field_name='label', palette=Viridis256, low=min(y_test), high=max(y_test))
 
 p = figure(title="t-SNE", tools="pan,wheel_zoom,box_zoom,reset", width=600, height=600)
 p.scatter('x', 'y', size=5, source=source, fill_color=mapper, line_color=None, fill_alpha=0.35)
@@ -73,7 +62,7 @@ hover = HoverTool(tooltips="""
 p.add_tools(hover)
 
 source_curve = ColumnDataSource(data=dict(x=[], y=[]))
-p_latent = figure(title="Vecteur latent", x_axis_label="Dimension", y_axis_label="Valeur", width=800, height=600, x_range=(0, len(X_reencoded_all[0])), y_range=(X_reencoded_all.min() - 0.1, X_reencoded_all.max() + 0.1))
+p_latent = figure(title="Vecteur latent", x_axis_label="Dimension", y_axis_label="Valeur", width=800, height=600, x_range=(0, len(z_test[0])), y_range=(z_test.min() - 0.1, z_test.max() + 0.1))
 
 source_saved = ColumnDataSource(data=dict(x=[], y=[]))
 p_latent.line('x', 'y', source=source_saved, line_width=3, line_color="#BBBBBB", line_dash="dashed")
@@ -87,12 +76,12 @@ p.js_on_event('mousemove', CustomJS(args=dict(
     source=source,
     source_curve=source_curve,
     centroid_curve=centroid_curve,
-    encoded_means=encoded_means.tolist(),
+    encoded_means=[value[0] for value in z_class_distributions.values()],
     line=line,
     line_c=line_c,
     palette=Viridis256,
-    low=min(Y_valid),
-    high=max(Y_valid),
+    low=min(y_test),
+    high=max(y_test),
 ), code="""
     const x_mouse = cb_obj.x;
     const y_mouse = cb_obj.y;
@@ -185,5 +174,5 @@ p.js_on_event('tap', CustomJS(args=dict(source=source, source_saved=source_saved
     source_saved.change.emit();
 """))
 
-output_file("./Bokeh/mnist_bokeh.html")
+output_file(cache.RESULTS_FOLDER / "Bokeh" / "mnist_bokeh.html")
 show(row(p, p_latent))

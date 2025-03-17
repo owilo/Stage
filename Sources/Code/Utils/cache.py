@@ -13,9 +13,7 @@ def get_env_folder(folder_key):
 CACHE_FOLDER = get_env_folder("CACHE_PATH")
 MODEL_FOLDER = get_env_folder("MODEL_PATH")
 RESULTS_FOLDER = get_env_folder("RESULTS_PATH")
-
-import os
-import pickle
+IMAGES_FOLDER = get_env_folder("IMAGES_PATH")
 
 def load_from_cache(data_id, supplier, save_cache=True):
     if not data_id.endswith(".pkl"):

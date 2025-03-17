@@ -107,6 +107,9 @@ def pred_classes(fig):
     plt.subplots_adjust(bottom=0.2)
     fig.legend(handles=legend_patches, loc="lower center", ncol=10, fontsize=10, frameon=False, title="Classes")
 
+def group_by_class(x, y):
+    return {cls: x[y == cls] for cls in np.unique(y)}
+
 def split_dataset(x, y, p, seed=0):
     x = np.array(x)
     y = np.array(y)
@@ -134,9 +137,6 @@ def split_dataset(x, y, p, seed=0):
     x2, y2 = x[indices_2], y[indices_2]
     
     return x1, y1, x2, y2
-
-def group_by_class(x, y):
-    return {cls: x[y == cls] for cls in np.unique(y)}
 
 def classify(x, classifier):
     x = np.asarray(x, dtype=np.float32)
