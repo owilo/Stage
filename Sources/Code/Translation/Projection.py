@@ -13,6 +13,7 @@ from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling  # Importa
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)
+tf.keras.utils.set_random_seed(42)
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -36,8 +37,7 @@ digits = np.array([
 y_src = 2
 y_dst = 6
 
-# Encodage et calcul des distributions latentes
-z_test_src = latent.encode_n(autoencoder, x_test, 3, save_cache=True)
+z_test_src = latent.encode_n(autoencoder, x_test, y_test, 3, save_cache=True)
 z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
 source_classes = np.full(10, y_src)
@@ -45,7 +45,6 @@ destination_classes = np.full(10, y_dst)
 
 z_translated = latent.translate(z_test_src[digits[y_src]], source_classes, destination_classes, z_class_distributions, False)
 
-# Concaténation : points test, chiffres translatés, centroïdes (source et destination)
 z_all = np.concatenate((
     z_test_src, 
     z_translated, 
@@ -53,8 +52,7 @@ z_all = np.concatenate((
     np.expand_dims(z_class_distributions[y_dst][0], axis=0)
 ))
 
-######################
-# t-SNE (2D)
+# t-SNE
 tsne = TSNE(n_components=2, random_state=1337, max_iter=300)
 z_tsne = tsne.fit_transform(z_all)
 z_tsne_test = z_tsne[:-12]
@@ -98,7 +96,6 @@ plt.legend()
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-tsne.png")
 
-######################
 # ACP 2D
 pca2d = PCA(n_components=2, random_state=1337)
 z_pca2d = pca2d.fit_transform(z_all)
@@ -143,7 +140,6 @@ plt.legend()
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-pca2d.png")
 
-######################
 # ACP 3D
 pca3d = PCA(n_components=3, random_state=1337)
 z_pca3d = pca3d.fit_transform(z_all)
@@ -182,12 +178,7 @@ plt.title(f"ACP 3D : Translation de {y_src} vers {y_dst}")
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-pca3d.png")
 
-######################
-# LDA (2D)
-# Construction des labels pour l'ensemble complet :
-# - Les points test conservent leur label y_test
-# - Les chiffres translatés reçoivent le label destination (y_dst)
-# - Les centroïdes : source et destination
+# LDA
 labels_all = np.concatenate((y_test, np.full(10, y_dst), np.array([y_src, y_dst])))
 
 lda = LDA(n_components=2)

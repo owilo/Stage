@@ -4,9 +4,11 @@ from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
 from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.Classifier import Classifier # Important
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)
+tf.keras.utils.set_random_seed(42)
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -25,13 +27,24 @@ digit_indices = np.array([
     5333  # 9
 ])
 
-x_selected_test = x_test[digit_indices]
-
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
-classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifieur" / "classifier.keras")
+classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
-z_test = latent.encode_n(autoencoder, x_selected_test, 3, save_cache=False)
-z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
+z_test = latent.encode_n(
+    autoencoder,
+    x=x_test[digit_indices],
+    y=y_test[digit_indices],
+    n=3,
+    save_cache=False
+)
+
+z_class_distributions = latent.class_distributions_n(
+    autoencoder,
+    x=x_train,
+    y=y_train,
+    n=2,
+    save_cache=True
+)
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 

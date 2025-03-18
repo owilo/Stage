@@ -138,6 +138,31 @@ def split_dataset(x, y, p, seed=0):
     
     return x1, y1, x2, y2
 
+def split_src_to_dst(x, y):
+    d = group_by_class(x, y)
+
+    dst_classes = np.array(list(d.keys()), dtype=object)
+    m = len(dst_classes)
+
+    x_src_list = []
+    y_src_list = []
+    y_dst_list = []
+
+    for key, items in d.items():
+        n = len(items)
+        
+        x_src_list.append(np.array(items))
+        y_src_list.append(np.full(n, key))
+        
+        bin_indices = np.floor(np.linspace(0, m, n, endpoint=False)).astype(int)
+        y_dst_list.append(dst_classes[bin_indices])
+
+    x_src = np.concatenate(x_src_list)
+    y_src = np.concatenate(y_src_list)
+    y_dst = np.concatenate(y_dst_list)
+    
+    return x_src, y_src, y_dst
+
 def classify(x, classifier):
     x = np.asarray(x, dtype=np.float32)
 
@@ -145,7 +170,7 @@ def classify(x, classifier):
     if single_image:
         x = np.expand_dims(x, axis=0)
 
-    predictions = classifier.predict(x, batch_size=x.shape[0])
+    predictions = classifier.predict(x)
 
     if predictions.shape[-1] == 1:
         guessed = (predictions >= 0.5).astype(int)
@@ -169,3 +194,10 @@ def preprocess_dataset(x_train, x_test):
     x_test = x_test.astype("float32") / 255.
     x_test = x_test.reshape(-1, 28, 28, 1)
     return x_train, x_test
+
+def shuffle(*arrays, seed=0):
+    rng = np.random.default_rng(seed)
+    assert all(len(arr) == len(arrays[0]) for arr in arrays), "Tous les tableaux doivent être de même longueur"
+    indices = np.arange(len(arrays[0]))
+    rng.shuffle(indices)
+    return tuple(arr[indices] for arr in arrays)

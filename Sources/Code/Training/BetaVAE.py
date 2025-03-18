@@ -228,4 +228,8 @@ if __name__ == "__main__":
 
     MODEL_PATH = cache.MODEL_FOLDER / "BetaVAE"
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    vae.save(MODEL_PATH / "h-betavae128.keras")
+
+    if (len(sys.argv) > 1):
+        vae.save(MODEL_PATH / "h-betavae128.keras")
+    else:
+        vae.save(MODEL_PATH / "betavae128.keras")

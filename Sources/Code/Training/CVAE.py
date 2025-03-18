@@ -217,4 +217,8 @@ if __name__ == "__main__":
 
     MODEL_PATH = cache.MODEL_FOLDER / "CVAE"
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    cvae.save(MODEL_PATH / "cvae16_2.keras")
+
+    if (len(sys.argv) > 1):
+        cvae.save(MODEL_PATH / "h-cvae16.keras")
+    else:
+        cvae.save(MODEL_PATH / "cvae16.keras")

@@ -1,41 +1,14 @@
-
-
-
-
-
-
-
-
-
-
-
-#########################################################
-# Utiliser Classifier_old.py (et autres classifs. _old) #
-#########################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""import tensorflow as tf
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
-import os
 
 from Code.Utils import cache, utils
 
+@tf.keras.utils.register_keras_serializable()
 class Classifier(keras.Model):
-    def __init__(self):
-        super(Classifier, self).__init__()
+    def __init__(self, **kwargs):
+        super(Classifier, self).__init__(**kwargs)
         self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(32, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
@@ -62,8 +35,8 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    Y_train = keras.utils.to_categorical(y_train, 10)
-    Y_valid = keras.utils.to_categorical(y_test, 10)
+    y_train = keras.utils.to_categorical(y_train, 10)
+    y_test = keras.utils.to_categorical(y_test, 10)
 
     classifier = Classifier()
     classifier.build(input_shape=(None, 28, 28, 1))
@@ -76,9 +49,9 @@ if __name__ == "__main__":
     )
 
     batch_size = 128
-    num_epochs = 15
+    num_epochs = 50
     classifier.fit(x_train, y_train, batch_size=batch_size, epochs=num_epochs, validation_data=(x_test, y_test))
 
     MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
-    os.makedirs(MODEL_PATH, exist_ok=True)
-    classifier.save(os.path.join(MODEL_PATH, "classifier.keras"))"""
+    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    classifier.save(MODEL_PATH / "classifier.keras")

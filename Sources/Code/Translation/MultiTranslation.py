@@ -5,15 +5,17 @@ import tensorflow as tf
 from keras.datasets import mnist
 
 from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.Classifier import Classifier # Important
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)
+tf.keras.utils.set_random_seed(42)
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
-classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifieur" / "classifier.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 digits = np.array([
     [157, 713, 1261, 3911, 5684, 5865, 8067, 8199, 8681, 9753],
@@ -37,12 +39,19 @@ certainties_sources = cert_src.reshape(10, 10)
 selected_indices = digits.flatten()
 z_test = latent.encode_n(
     autoencoder, 
-    x = x_test[selected_indices],
-    y = y_test[selected_indices],
-    n = 3,
+    x=x_test[selected_indices],
+    y=y_test[selected_indices],
+    n=3,
     save_cache=False
 )
-z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
+
+z_class_distributions = latent.class_distributions_n(
+    autoencoder,
+    x=x_train,
+    y=y_train,
+    n=2,
+    save_cache=True
+)
 
 z_src_all = np.repeat(z_test, 10, axis=0)
 y_src_all = np.repeat(np.arange(10), 100)
