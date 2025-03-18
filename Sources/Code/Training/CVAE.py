@@ -1,8 +1,9 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import math
 import numpy as np
-import os
+import sys
 
 from Code.Utils import cache, utils
 
@@ -73,6 +74,9 @@ class Decoder(tf.keras.Model):
     def get_config(self):
         config = super(Decoder, self).get_config()
         return config
+    
+    def requires_labels(self):
+        return True
 
 @tf.keras.utils.register_keras_serializable()
 class CVAE(keras.Model):
@@ -178,21 +182,39 @@ if __name__ == "__main__":
     y_train = keras.utils.to_categorical(y_train, num_classes)
     y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    latent_dim = 16
+    latent_dim = 128
+    num_epochs = 30
+    batch_size = 32
+
     cvae = CVAE(latent_dim=latent_dim, final_beta=3.5, annealing_steps=27500)
     cvae.compile(optimizer=keras.optimizers.Adam())
 
-    cvae.fit(
-        x=x_train, y=y_train,
-        batch_size=32,
-        epochs=30,
-        validation_data=(x_test, y_test)
-    )
+    if (len(sys.argv) > 1):
+        p = max(0.0, min(float(sys.argv[1]), 1.0))
+        print(f">> Taille du dataset d'entraînement : {p}")
+
+        x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, p)
+        cvae.fit(
+            x_train_left,
+            epochs=math.ceil(num_epochs / p),
+            batch_size=batch_size,
+            validation_split=0.1,
+            validation_batch_size=batch_size
+        )
+    else:
+        print(">> Entraînement classique")
+        cvae.fit(
+            x_train,
+            epochs=num_epochs,
+            batch_size=batch_size,
+            validation_data=x_test,
+            validation_batch_size=batch_size
+        )
 
     dummy_x = np.random.rand(1, 28, 28, 1).astype("float32")
     dummy_y = np.zeros((1, 10)).astype("float32")
     _ = cvae((dummy_x, dummy_y))
 
     MODEL_PATH = cache.MODEL_FOLDER / "CVAE"
-    os.makedirs(MODEL_PATH, exist_ok=True)
-    cvae.save(os.path.join(MODEL_PATH, "cvae16_2.keras"))
+    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    cvae.save(MODEL_PATH / "cvae16_2.keras")

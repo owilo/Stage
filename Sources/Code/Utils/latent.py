@@ -2,38 +2,44 @@ from . import cache
 import numpy as np
 import tensorflow as tf
 
-def encode_n(autoencoder, data, n, save_cache=False):
+def decode(autoencoder, z, y):
+    if autoencoder.decoder.requires_labels():
+        return autoencoder.decoder.predict((z, y))
+    else:
+        return autoencoder.decoder.predict(z)
+
+def encode_n(autoencoder, x, y, n, save_cache=False):
     """
     Applique alternativement l'encodage et le décodage n fois pour obtenir le résultat final encodé.
     """
-    key = cache.model_hash(autoencoder) + cache.data_hash(data) + str(n)
+    key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
 
     def _encode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
-        _, _, result = autoencoder.encoder.predict(data) # todo
+        _, _, r = autoencoder.encoder.predict(x) # todo
         for _ in range(1, n):
-            result = autoencoder.decoder.predict(result)
-            _, _, result = autoencoder.encoder.predict(result)
-        return result
+            r = decode(autoencoder, r, y)
+            _, _, r = autoencoder.encoder.predict(r)
+        return r
 
     return cache.load_from_cache(key, _encode, save_cache)
 
 
-def decode_n(autoencoder, data, n, save_cache=False):
+def decode_n(autoencoder, z, y, n, save_cache=False):
     """
     Applique alternativement le décodage et l'encodage n fois pour obtenir le résultat final décodé.
     """
-    key = cache.model_hash(autoencoder) + cache.data_hash(data) + str(n)
+    key = cache.model_hash(autoencoder) + cache.data_hash(z) + cache.data_hash(y) + str(n)
     
     def _decode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
-        result = autoencoder.decoder.predict(data)
+        r = decode(autoencoder, z, y)
         for _ in range(1, n):
-            _, _, result = autoencoder.encoder.predict(result) #todo
-            result = autoencoder.decoder.predict(result)
-        return result
+            _, _, r = autoencoder.encoder.predict(r) #todo
+            r = decode(autoencoder, r, y)
+        return r
 
     return cache.load_from_cache(key, _decode, save_cache)
 
@@ -45,7 +51,7 @@ def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     key = "gms" + cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
 
     def _class_distributions():
-        z = encode_n(autoencoder, x, n, False)
+        z = encode_n(autoencoder, x, y, n, False)
 
         result = {}
         

@@ -12,7 +12,7 @@ np.random.seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifieur" / "classifier.keras")
 
 digits = np.array([
@@ -35,16 +35,29 @@ guessed_sources = guessed_src.reshape(10, 10)
 certainties_sources = cert_src.reshape(10, 10)
 
 selected_indices = digits.flatten()
-z_test = latent.encode_n(autoencoder, x_test[selected_indices], 3, save_cache=False)
+z_test = latent.encode_n(
+    autoencoder, 
+    x = x_test[selected_indices],
+    y = y_test[selected_indices],
+    n = 3,
+    save_cache=False
+)
 z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
 
 z_src_all = np.repeat(z_test, 10, axis=0)
 y_src_all = np.repeat(np.arange(10), 100)
 y_dst_all = np.tile(np.arange(10), 100)
 
-def generate_and_save_grids(translated_z, y_src, y_dst, distributions, filename_suffix):
-    z_translated = latent.translate(translated_z, y_src, y_dst, distributions)
-    x_decoded = autoencoder.decoder.predict(z_translated)
+z_translated = latent.translate(z_src_all, y_src_all, y_dst_all, z_class_distributions)
+x_decoded = autoencoder.decoder.predict(z_translated)
+
+_, _, z_reencoded = autoencoder.encoder.predict(x_decoded)
+
+z_inv_translated = latent.translate(z_reencoded, y_dst_all, y_src_all, z_class_distributions)
+
+x_reconstructed = autoencoder.decoder.predict(z_inv_translated)
+
+def generate_and_save_grids(x_decoded, filename_suffix):
     x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
     guessed, _, certainties = utils.classify(x_decoded, classifier)
     
@@ -91,5 +104,5 @@ def generate_and_save_grids(translated_z, y_src, y_dst, distributions, filename_
         plt.close(fig)
         print(f"Sauvegarde du fichier {file}")
 
-generate_and_save_grids(z_src_all, y_src_all, y_dst_all, z_class_distributions, "translation-grid")
-generate_and_save_grids(z_src_all, y_dst_all, y_src_all, z_class_distributions, "inverse-translation-grid")
+generate_and_save_grids(x_decoded, "translation-grid")
+generate_and_save_grids(x_reconstructed, "inverse-translation-grid")

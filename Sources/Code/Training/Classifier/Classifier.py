@@ -1,4 +1,31 @@
-import tensorflow as tf
+
+
+
+
+
+
+
+
+
+
+
+#########################################################
+# Utiliser Classifier_old.py (et autres classifs. _old) #
+#########################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
@@ -9,6 +36,7 @@ from Code.Utils import cache, utils
 class Classifier(keras.Model):
     def __init__(self):
         super(Classifier, self).__init__()
+        self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(32, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
         self.conv2 = layers.Conv2D(64, (3, 3), activation="relu")
@@ -18,7 +46,8 @@ class Classifier(keras.Model):
         self.dense = layers.Dense(10, activation="softmax")
 
     def call(self, inputs):
-        x = self.conv1(inputs)
+        x = self.input_resize(inputs)
+        x = self.conv1(x)
         x = self.pool1(x)
         x = self.conv2(x)
         x = self.pool2(x)
@@ -52,4 +81,4 @@ if __name__ == "__main__":
 
     MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
     os.makedirs(MODEL_PATH, exist_ok=True)
-    classifier.save(os.path.join(MODEL_PATH, "classifier.keras"))
+    classifier.save(os.path.join(MODEL_PATH, "classifier.keras"))"""

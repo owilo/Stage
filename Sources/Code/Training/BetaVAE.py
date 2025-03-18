@@ -1,8 +1,9 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import math
 import numpy as np
-import os
+import sys
 
 from Code.Utils import cache, utils
 
@@ -104,6 +105,9 @@ class Decoder(tf.keras.Model):
             "latent_dim": self.latent_dim,
         })
         return config
+    
+    def requires_labels(self):
+        return False
 
 @tf.keras.utils.register_keras_serializable()
 class BetaVAE(tf.keras.Model):
@@ -162,7 +166,7 @@ class BetaVAE(tf.keras.Model):
         )
         kl_loss = self.beta * (-0.5 * tf.reduce_mean(
             tf.reduce_mean(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
-        )) # or reduce_sum?
+        ))
         total_loss = reconstruction_loss + kl_loss
         self.total_loss_tracker.update_state(total_loss)
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)
@@ -183,7 +187,7 @@ if __name__ == "__main__":
     np.random.seed(42)
     tf.keras.utils.set_random_seed(42)
 
-    (x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
+    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
     x_train = tf.image.resize(x_train, (64, 64))
@@ -191,22 +195,37 @@ if __name__ == "__main__":
 
     latent_dim = 128
     beta = 6.0
-    num_epochs = 5
+    num_epochs = 10
     batch_size = 32
 
     vae = BetaVAE(latent_dim=latent_dim, beta=beta)
     vae.compile(optimizer=keras.optimizers.Adam())
-    vae.fit(
-        x_train,
-        epochs=num_epochs,
-        batch_size=batch_size,
-        validation_data=x_test,
-        validation_batch_size=batch_size
-    )
+
+    if (len(sys.argv) > 1):
+        p = max(0.0, min(float(sys.argv[1]), 1.0))
+        print(f">> Taille du dataset d'entraînement : {p}")
+
+        x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, p)
+        vae.fit(
+            x_train_left,
+            epochs=math.ceil(num_epochs / p),
+            batch_size=batch_size,
+            validation_split=0.1,
+            validation_batch_size=batch_size
+        )
+    else:
+        print(">> Entraînement classique")
+        vae.fit(
+            x_train,
+            epochs=num_epochs,
+            batch_size=batch_size,
+            validation_data=x_test,
+            validation_batch_size=batch_size
+        )
 
     dummy_x = np.random.rand(1, 64, 64, 1).astype("float32")
     _ = vae(dummy_x)
 
     MODEL_PATH = cache.MODEL_FOLDER / "BetaVAE"
-    os.makedirs(MODEL_PATH, exist_ok=True)
-    vae.save(os.path.join(MODEL_PATH, "betavae128.keras"))
+    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    vae.save(MODEL_PATH / "h-betavae128.keras")
