@@ -182,15 +182,12 @@ if __name__ == "__main__":
     y_train = keras.utils.to_categorical(y_train, num_classes)
     y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    latent_dim = 16
+    latent_dim = 128
     num_epochs = 30
     batch_size = 32
 
     cvae = CVAE(latent_dim=latent_dim, final_beta=3.5, annealing_steps=27500)
     cvae.compile(optimizer=keras.optimizers.Adam())
-
-    print(type(x_train), type(y_train))
-    print(x_train.shape, y_train.shape)
 
     if (len(sys.argv) > 1):
         p = max(0.0, min(float(sys.argv[1]), 1.0))

@@ -3,8 +3,8 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
 from Code.Utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
 
-    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
+    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae16.keras")
 
     z_src = latent.encode_n(
         autoencoder,
@@ -95,8 +95,6 @@ if __name__ == "__main__":
     x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
 
     y_trans = (y_src != y_dst).astype(int)
-
-    unique, counts = np.unique(y_trans, return_counts=True)
 
     trace_classifier.fit(
         x_dst,

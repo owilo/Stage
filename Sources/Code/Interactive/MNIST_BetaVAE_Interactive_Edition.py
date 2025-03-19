@@ -4,6 +4,8 @@ import cv2
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+# todo note: modifier quand le betavae16 sera réentraîné
+
 encoder = load_model("./Models/DISVAE/mnist-16-beta-encoder.keras")
 decoder = load_model("./Models/DISVAE/mnist-16-beta-decoder.keras")
 
