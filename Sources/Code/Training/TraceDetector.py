@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
 
-    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae16.keras")
+    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
 
     z_src = latent.encode_n(
         autoencoder,

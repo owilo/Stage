@@ -1,6 +1,7 @@
 import xxhash
 import dotenv
 import os
+import sys
 import pickle
 from pathlib import Path
 
@@ -44,3 +45,14 @@ def model_hash(model):
 
 def data_hash(data):
     return xxhash.xxh3_64_hexdigest(pickle.dumps(data))
+
+def clear_cache():
+    if CACHE_FOLDER.exists() and CACHE_FOLDER.is_dir():
+        for file in CACHE_FOLDER.iterdir():
+            if file.is_file():
+                file.unlink()
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "empty":
+        clear_cache()
+        print("Tous les fichiers du cache ont été supprimés")
