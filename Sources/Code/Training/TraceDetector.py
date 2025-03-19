@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 import numpy as np
 
 from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
 from Code.Utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     )
 
     batch_size = 16
-    num_epochs = 80
+    num_epochs = 10
 
     x_train_l, y_train_l, x_train_r, y_train_r = utils.split_dataset(x_train, y_train, 0.5) # Moitié gauche pour le VAE
 
@@ -70,29 +71,43 @@ if __name__ == "__main__":
         save_cache=True
     )
 
-    z_class_distributions = latent.class_distributions_n(
-        autoencoder,
-        x=x_train_l,
-        y=y_train_l,
-        n=2,
-        save_cache=True
-    )
+    if autoencoder.decoder.requires_labels():
+        z_dst = latent.style_class_transform(z_src, y_dst)
+    else:
+        z_class_distributions = latent.class_distributions_n(
+            autoencoder,
+            x=x_train_l,
+            y=y_train_l,
+            n=2,
+            save_cache=True
+        )
+        
+        z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
 
-    z_translated = latent.translate(z_src, y_src, y_dst, z_class_distributions)
-    x_decoded = autoencoder.decoder.predict(z_translated)
+    x_dst = autoencoder.decoder.predict(z_dst)
 
-    x_decoded, z_src, z_translated, y_src, y_dst = utils.shuffle(x_decoded, z_src, z_translated, y_src, y_dst)
+    # Les non-translatés restent inchangés (aucun encodage-décodage)
+    x_dst = tf.image.resize(x_dst, (28, 28)).numpy()
 
-    y_trans = (y_src == y_dst).astype(int)
+    mask = (y_src == y_dst)
+    x_dst[mask] = x_src[mask]
+
+    x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
+
+    y_trans = (y_src != y_dst).astype(int)
+
+    unique, counts = np.unique(y_trans, return_counts=True)
 
     trace_classifier.fit(
-        x_decoded,
+        x_dst,
         y_trans,
         batch_size=batch_size,
         epochs=num_epochs,
         validation_split=0.1
     )
 
+    model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
+
     MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    trace_classifier.save(MODEL_PATH / "trace-detector.keras")
+    trace_classifier.save(MODEL_PATH / f"trace-detector-{model_type}.keras")

@@ -113,14 +113,22 @@ def group_by_class(x, y):
 def split_dataset(x, y, p, seed=0):
     x = np.array(x)
     y = np.array(y)
+
+    yl = y
+    # Si y est catégorique, on le transforme en simple tableau de labels
+    if y.ndim > 1 and y.shape[1] > 1:
+        if np.all(np.sum(y, axis=1) == 1):
+            yl = np.argmax(y, axis=1)
+        else:
+            raise ValueError("y n'est pas un tableau de labels.")
     
     rng = np.random.default_rng(seed)
     
     indices_1 = []
     indices_2 = []
     
-    for cls in np.unique(y):
-        cls_indices = np.where(y == cls)[0]
+    for cls in np.unique(yl):
+        cls_indices = np.where(yl == cls)[0]
         rng.shuffle(cls_indices)
         split_idx = int(len(cls_indices) * p)
 
@@ -141,7 +149,7 @@ def split_dataset(x, y, p, seed=0):
 def split_src_to_dst(x, y):
     d = group_by_class(x, y)
 
-    dst_classes = np.array(list(d.keys()), dtype=object)
+    dst_classes = np.array(list(d.keys()), dtype=int)
     m = len(dst_classes)
 
     x_src_list = []

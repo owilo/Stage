@@ -182,20 +182,25 @@ if __name__ == "__main__":
     y_train = keras.utils.to_categorical(y_train, num_classes)
     y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    latent_dim = 128
+    latent_dim = 16
     num_epochs = 30
     batch_size = 32
 
     cvae = CVAE(latent_dim=latent_dim, final_beta=3.5, annealing_steps=27500)
     cvae.compile(optimizer=keras.optimizers.Adam())
 
+    print(type(x_train), type(y_train))
+    print(x_train.shape, y_train.shape)
+
     if (len(sys.argv) > 1):
         p = max(0.0, min(float(sys.argv[1]), 1.0))
         print(f">> Taille du dataset d'entraînement : {p}")
 
-        x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, p)
+        x_train_left, y_train_left, _, _ = utils.split_dataset(x_train, y_train, p)
+
         cvae.fit(
             x_train_left,
+            y_train_left,
             epochs=math.ceil(num_epochs / p),
             batch_size=batch_size,
             validation_split=0.1,
@@ -203,11 +208,13 @@ if __name__ == "__main__":
         )
     else:
         print(">> Entraînement classique")
+
         cvae.fit(
             x_train,
+            y_train,
             epochs=num_epochs,
             batch_size=batch_size,
-            validation_data=x_test,
+            validation_data=(x_test, y_test),
             validation_batch_size=batch_size
         )
 
@@ -219,6 +226,6 @@ if __name__ == "__main__":
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
 
     if (len(sys.argv) > 1):
-        cvae.save(MODEL_PATH / "h-cvae16.keras")
+        cvae.save(MODEL_PATH / f"h-cvae{latent_dim}.keras")
     else:
-        cvae.save(MODEL_PATH / "cvae16.keras")
+        cvae.save(MODEL_PATH / f"cvae{latent_dim}.keras")

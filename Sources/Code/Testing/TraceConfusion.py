@@ -5,9 +5,10 @@ import seaborn as sns
 
 import tensorflow as tf
 from tensorflow import keras
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import confusion_matrix
 
 from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
 from Code.Training.Classifier import Classifier
 from Code.Training.TraceClassifier import TraceClassifier
 from Code.Training.TraceDetector import TraceDetector
@@ -17,7 +18,7 @@ def compute_confusion_matrix(cm, certainties, labels, filename, title_prefix="")
     accuracy = np.trace(cm) / np.sum(cm)
     avg_certainty = np.mean(certainties)
 
-    percentages = (cm / np.sum(cm, axis=1)) * 100
+    percentages = (cm / np.sum(cm, axis=1, keepdims=True)) * 100
 
     annot = np.empty_like(cm, dtype=object)
     for i in range(cm.shape[0]):
@@ -56,8 +57,11 @@ x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rr, y_train_rr)
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
-trace_classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "trace-classifier.keras")
-trace_detector = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "trace-detector.keras")
+
+model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
+
+trace_classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-classifier-{model_type}.keras")
+trace_detector = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-detector-{model_type}.keras")
 
 z_src = latent.encode_n(
     autoencoder,
@@ -67,290 +71,122 @@ z_src = latent.encode_n(
     save_cache=True
 )
 
-z_class_distributions = latent.class_distributions_n(
-    autoencoder,
-    x=x_train_l,
-    y=y_train_l,
-    n=2,
-    save_cache=True
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_dst = latent.style_class_transform(z_src, y_dst)
+else: # Beta-VAE
+    z_class_distributions = latent.class_distributions_n(
+        autoencoder,
+        x=x_train_l,
+        y=y_train_l,
+        n=2,
+        save_cache=True
+    )
+
+    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
+
+x_dst = autoencoder.decoder.predict(z_dst)
+_, _, z_invdst = autoencoder.encoder.predict(x_dst)
+
+if autoencoder.decoder.requires_labels():
+    z_invsrc = latent.style_class_transform(z_invdst, y_src)
+else:
+    z_invsrc = latent.translate(z_invdst, y_dst, y_src, z_class_distributions)
+
+x_invsrc = autoencoder.decoder.predict(z_invsrc)
+
+y_trans = (y_src != y_dst).astype(int)
+
+FOLDER = cache.RESULTS_FOLDER / "TraceConfusion"
+FOLDER.mkdir(parents=True, exist_ok=True)
+
+# Reconnaissance de la classe source sans translation
+guessed, _, certainties = utils.classify(x_src, trace_classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"trace-{model_type}-i.png",
+    f"Reconnaissance de la classe i (i)"
 )
 
-z_translated = latent.translate(z_src, y_src, y_dst, z_class_distributions)
-x_decoded = autoencoder.decoder.predict(z_translated)
-
-x_decoded, z_src, z_translated, y_src, y_dst = utils.shuffle(x_decoded, z_src, z_translated, y_src, y_dst)
-
-y_src_categorical = keras.utils.to_categorical(y_src, 10)
-y_dst_categorical = keras.utils.to_categorical(y_dst, 10)
-y_trans = (y_src == y_dst).astype(int)
-
-#
-classifier = load_model("./Models/Classifieur/classifier.keras")
-res_classifier = load_model("./Models/Classifieur/residual-classifier-std-128.keras")
-detect_classifier = load_model("./Models/Classifieur/residual-detection-classifier-128.keras")
-
-# Reconnaissance de la classe sans translation (détection de trace)
-Y_pred = res_classifier.predict(X_classes_original2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes_original2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes_original2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Reconnaissances des classes sans translation par détection de trace", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-complete-unchanged-classifier-confusion.png")
-
-Y_pred_guessed_src_classes = Y_pred_classes
-
-# Reconnaissance de la classe source (détection de trace)
-Y_pred = res_classifier.predict(X_classes2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes sources", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-classifier-confusion.png")
-
-Y_pred_guessed_dst_classes = Y_pred_classes
-
-# Reconnaissance de la classe destination par translation inverse (détection de trace)
-Y_pred = res_classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes_translated2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes_translated2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes destination après translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-dst.png")
-
-# Reconnaissance de la classe source par translation inverse (détection de trace)
-Y_pred = res_classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes sources après translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-src.png")
-
-# Reconnaissance de la classe prédite par translation inverse (détection de trace)
-Y_pred = res_classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_pred_guessed_dst_classes, Y_pred_classes)
-
-cm = confusion_matrix(Y_pred_guessed_dst_classes, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes destination prédites, après translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-predicted-dst.png")
-
-# Reconnaissance de la classe source prédite par translation inverse (détection de trace)
-Y_pred = res_classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_pred_guessed_src_classes, Y_pred_classes)
-
-cm = confusion_matrix(Y_pred_guessed_src_classes, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection des classes sources prédites, après translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-classifier-confusion-inverse-predicted-src.png")
-
-# Reconnaissance de la classe destination (classification naïve)
-Y_pred = classifier.predict(X_classes2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes_translated2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes_translated2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Classification", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-normal-classifier-confusion.png")
-
-# Reconnaissance de la classe d'origine après translation inverse (classification naïve)
-Y_pred = classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = np.argmax(Y_pred, axis = 1)
-
-certainty = np.max(Y_pred, axis=1)
-average_certainty = np.mean(certainty)
-
-accuracy = accuracy_score(Y_classes2, Y_pred_classes)
-
-cm = confusion_matrix(Y_classes2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Classification après translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-normal-classifier-confusion-inverse.png")
+## Translation
+
+# Classification de la translation
+guessed, _, certainties = utils.classify(x_dst, classifier)
+cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"classif-{model_type}-i-j.png",
+    f"Classification de la translation (i → j)"
+)
+
+# Reconnaissance de la classe source après translation
+guessed, _, certainties = utils.classify(x_dst, trace_classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"trace-{model_type}-i-j.png",
+    f"Reconnaissance de la classe i (i → j)"
+)
 
 # Détection de la translation
-Y_pred = detect_classifier.predict(X_classes2)
+guessed, _, certainties = utils.classify(x_dst, trace_detector)
+cm = confusion_matrix(y_trans, guessed, labels=np.arange(2))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    ["Non détecté", "Détecté"],
+    FOLDER / f"detect-{model_type}-i-j.png",
+    f"Détection de la translation (i → j)"    
+)
 
-Y_pred_classes = (Y_pred >= 0.5).astype(int)
+## Translation inverse
 
-accuracy = accuracy_score(Y_classes_isTranslated2, Y_pred_classes)
+# Reconnaissance de la classe de destination après translation inverse
+guessed, _, certainties = utils.classify(x_invsrc, trace_classifier)
+cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"trace-{model_type}-i-J-i.png",
+    f"Reconnaissance de la classe j (i → j → i)"
+)
 
-average_certainty = 1.0 - np.mean(np.abs(Y_pred - Y_pred_classes))
+# Reconnaissance de la classe source après translation inverse
+guessed, _, certainties = utils.classify(x_invsrc, trace_classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"trace-{model_type}-I-j-i.png",
+    f"Reconnaissance de la classe i (i → j → i)"
+)
 
-cm = confusion_matrix(Y_classes_isTranslated2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-detection_labels = ["Non détecté", "Détecté"]
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", xticklabels=detection_labels, yticklabels=detection_labels, vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection de la translation", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-detection-translation-confusion.png")
+# Classification de la translation inverse
+guessed, _, certainties = utils.classify(x_invsrc, classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"classif-{model_type}-i-j-i.png",
+    f"Classification (i → j → i)"    
+)
 
 # Détection de la translation inverse
-Y_pred = detect_classifier.predict(X_classes_inverse2)
-
-Y_pred_classes = (Y_pred >= 0.5).astype(int)
-
-accuracy = accuracy_score(Y_classes_isTranslated2, Y_pred_classes)
-
-average_certainty = 1.0 - np.mean(np.abs(Y_pred - Y_pred_classes))
-
-cm = confusion_matrix(Y_classes_isTranslated2, Y_pred_classes)
-
-row_sums = cm.sum(axis=1, keepdims=True)
-percentages = np.where(row_sums == 0, 0, cm / row_sums * 100)
-
-annot = np.array([["{:.2f}%".format(val) for val in row] for row in percentages])
-
-detection_labels = ["Non détecté", "Détecté"]
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", xticklabels=detection_labels, yticklabels=detection_labels, vmin=0.0, vmax=100.0)
-plt.xlabel("Classe prédite")
-plt.ylabel("Classe cible")
-plt.suptitle(f"Détection de la translation inverse", fontsize=18)
-plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {average_certainty:.2%}", fontsize=14)
-plt.tight_layout()
-plt.savefig("./Results/mnist-trace-detection-translation-confusion-inverse.png")
+guessed, _, certainties = utils.classify(x_invsrc, trace_detector)
+cm = confusion_matrix(y_trans, guessed, labels=np.arange(2))
+compute_confusion_matrix(
+    cm,
+    certainties,
+    ["Non détecté", "Détecté"],
+    FOLDER / f"detect-{model_type}-i-j-i.png",
+    f"Détection de la translation (i → j → i)"    
+)

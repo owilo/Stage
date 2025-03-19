@@ -14,6 +14,9 @@ def encode_n(autoencoder, x, y, n, save_cache=False):
     """
     key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
 
+    if autoencoder.decoder.requires_labels():
+        y = tf.keras.utils.to_categorical(y)
+
     def _encode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
@@ -31,6 +34,9 @@ def decode_n(autoencoder, z, y, n, save_cache=False):
     Applique alternativement le décodage et l'encodage n fois pour obtenir le résultat final décodé.
     """
     key = cache.model_hash(autoencoder) + cache.data_hash(z) + cache.data_hash(y) + str(n)
+
+    if autoencoder.decoder.requires_labels():
+        y = tf.keras.utils.to_categorical(y)
     
     def _decode():
         if n < 1:
@@ -92,3 +98,6 @@ def translate(z, source_y, destination_y, class_distributions, use_std=True):
             return dst_means + (dst_stds / src_stds) * (z - src_means)
         else:
             return z + dst_means - src_means
+        
+def style_class_transform(z, y):
+    return (z, tf.keras.utils.to_categorical(y))
