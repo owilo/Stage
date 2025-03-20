@@ -3,8 +3,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+from Code.Models import BetaVAE # Important
 from Code.Utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()

@@ -12,7 +12,7 @@ from bokeh.layouts import row
 import base64
 import cv2
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Models import BetaVAE
 from Code.Utils import cache, latent, utils
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()

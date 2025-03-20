@@ -100,4 +100,4 @@ def translate(z, source_y, destination_y, class_distributions, use_std=True):
             return z + dst_means - src_means
         
 def style_class_transform(z, y, num_classes=None):
-    return (z, tf.keras.utils.to_categorical(y, num_classes=10))
+    return (z, tf.keras.utils.to_categorical(y, num_classes=num_classes))

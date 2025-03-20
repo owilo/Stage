@@ -5,19 +5,8 @@ import math
 import numpy as np
 import sys
 
+from Code.Models.Common.layers import Sampling
 from Code.Utils import cache, utils
-
-@tf.keras.utils.register_keras_serializable()
-class Sampling(layers.Layer):
-    def call(self, inputs):
-        z_mean, z_log_var = inputs
-        batch = tf.shape(z_mean)[0]
-        dim = tf.shape(z_mean)[1]
-        epsilon = tf.random.normal(shape=(batch, dim))
-        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
-
-    def get_config(self):
-        return super().get_config()
 
 @tf.keras.utils.register_keras_serializable()
 class Encoder(tf.keras.Model):
@@ -131,7 +120,6 @@ class BetaVAE(tf.keras.Model):
         _, _, z = self.encoder(inputs)
         return self.decoder(z)
 
-    @tf.function
     def train_step(self, data):
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
@@ -155,7 +143,6 @@ class BetaVAE(tf.keras.Model):
                 "reconstruction_loss": self.reconstruction_loss_tracker.result(),
                 "kl_loss": self.kl_loss_tracker.result()}
 
-    @tf.function
     def test_step(self, data):
         z_mean, z_log_var, z = self.encoder(data)
         reconstruction = self.decoder(z)
@@ -182,6 +169,10 @@ class BetaVAE(tf.keras.Model):
             "beta": self.beta,
         })
         return config
+    
+BetaVAE.Encoder = Encoder
+BetaVAE.Decoder = Decoder
+BetaVAE.Sampling = Sampling
 
 if __name__ == "__main__":
     np.random.seed(42)

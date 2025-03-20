@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from matplotlib.widgets import CheckButtons
 
-from Code.Training.CVAE import Sampling, Encoder, Decoder, CVAE
+from Code.Models import CVAE
 from Code.Utils import cache
 
 cvae = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16_2.keras")

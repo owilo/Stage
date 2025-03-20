@@ -5,19 +5,8 @@ import math
 import numpy as np
 import sys
 
+from Code.Models.Common.layers import Sampling
 from Code.Utils import cache, utils
-
-@tf.keras.utils.register_keras_serializable()
-class Sampling(layers.Layer):
-    def call(self, inputs):
-        z_mean, z_log_var = inputs
-        batch = tf.shape(z_mean)[0]
-        dim = tf.shape(z_mean)[1]
-        epsilon = tf.random.normal(shape=(batch, dim))
-        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
-
-    def get_config(self):
-        return super().get_config()
 
 @tf.keras.utils.register_keras_serializable()
 class Encoder(tf.keras.Model):
@@ -99,7 +88,6 @@ class CVAE(keras.Model):
             self.kl_loss_tracker,
         ]
     
-    @tf.function
     def train_step(self, data):
         x, y = data
         with tf.GradientTape() as tape:
@@ -131,7 +119,6 @@ class CVAE(keras.Model):
             "beta": beta
         }
     
-    @tf.function
     def test_step(self, data):
         x, y = data
         z_mean, z_log_var, z = self.encoder(x)
@@ -170,6 +157,10 @@ class CVAE(keras.Model):
             "annealing_steps": self.annealing_steps,
         })
         return config
+    
+CVAE.Encoder = Encoder
+CVAE.Decoder = Decoder
+CVAE.Sampling = Sampling
 
 if __name__ == "__main__":
     np.random.seed(42)

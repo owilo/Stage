@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Models import BetaVAE
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)

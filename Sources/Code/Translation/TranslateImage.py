@@ -9,11 +9,7 @@ from sklearn.manifold import TSNE
 
 import cv2
 
-#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling
-from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling
-from Code.Training.Classifier import Classifier
-from Code.Training.TraceClassifier import TraceClassifier
-from Code.Training.TraceDetector import TraceDetector
+from Code.Models import *
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)

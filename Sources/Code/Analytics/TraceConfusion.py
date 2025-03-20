@@ -7,11 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
-from Code.Training.Classifier import Classifier
-from Code.Training.TraceClassifier import TraceClassifier
-from Code.Training.TraceDetector import TraceDetector
+from Code.Models import *
 from Code.Utils import cache, latent, utils
 
 def compute_confusion_matrix(cm, certainties, labels, filename, title_prefix=""):

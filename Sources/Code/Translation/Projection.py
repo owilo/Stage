@@ -9,7 +9,7 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling  # Important
+from Code.Models import BetaVAE
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)
