@@ -24,12 +24,12 @@ z_train = latent.encode_n(
 )
 
 for i in range(10):
-    X_class = z_train[y_train == i]
+    z_class = z_train[y_train == i]
 
     plt.figure(figsize=(10, 8))
     plt.axhline(y=0, color='gray')
 
-    plt.boxplot(X_class, patch_artist=True, 
+    plt.boxplot(z_class, patch_artist=True,
             boxprops=dict(facecolor='skyblue', color='blue'),
             medianprops=dict(color='red', linewidth=3),
             flierprops=dict(markerfacecolor='orange', marker='o', markersize=8, alpha=0.25, markeredgewidth=0))

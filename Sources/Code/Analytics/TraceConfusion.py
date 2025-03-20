@@ -7,8 +7,8 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 
-#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
 from Code.Training.Classifier import Classifier
 from Code.Training.TraceClassifier import TraceClassifier
 from Code.Training.TraceDetector import TraceDetector
@@ -55,7 +55,7 @@ _, _, x_train_rr, y_train_rr = utils.split_dataset(x_train_r, y_train_r, 0.75) #
 
 x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rr, y_train_rr)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"

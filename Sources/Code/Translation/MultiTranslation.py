@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.datasets import mnist
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
 from Code.Training.Classifier import Classifier # Important
 from Code.Utils import cache, latent, utils
 
@@ -14,7 +15,7 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 digits = np.array([
@@ -45,24 +46,38 @@ z_test = latent.encode_n(
     save_cache=False
 )
 
-z_class_distributions = latent.class_distributions_n(
-    autoencoder,
-    x=x_train,
-    y=y_train,
-    n=2,
-    save_cache=True
-)
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_class_distributions = None
+else: # BetaVAE
+    z_class_distributions = latent.class_distributions_n(
+        autoencoder,
+        x=x_train,
+        y=y_train,
+        n=2,
+        save_cache=True
+    )
 
 z_src_all = np.repeat(z_test, 10, axis=0)
 y_src_all = np.repeat(np.arange(10), 100)
 y_dst_all = np.tile(np.arange(10), 100)
 
-z_translated = latent.translate(z_src_all, y_src_all, y_dst_all, z_class_distributions)
+#z_translated = latent.translate(z_src_all, y_src_all, y_dst_all, z_class_distributions)
+
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_translated = latent.style_class_transform(z_src_all, y_dst_all)
+else: # Beta-VAE
+    z_translated = latent.translate(z_src_all, y_src_all, y_dst_all, z_class_distributions)
+
 x_decoded = autoencoder.decoder.predict(z_translated)
 
 _, _, z_reencoded = autoencoder.encoder.predict(x_decoded)
 
-z_inv_translated = latent.translate(z_reencoded, y_dst_all, y_src_all, z_class_distributions)
+#z_inv_translated = latent.translate(z_reencoded, y_dst_all, y_src_all, z_class_distributions)
+
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_inv_translated = latent.style_class_transform(z_reencoded, y_src_all)
+else: # Beta-VAE
+    z_inv_translated = latent.translate(z_reencoded, y_dst_all, y_src_all, z_class_distributions)
 
 x_reconstructed = autoencoder.decoder.predict(z_inv_translated)
 

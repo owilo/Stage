@@ -6,7 +6,8 @@ from keras.datasets import mnist
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
 from Code.Training.Classifier import Classifier # Important
 from Code.Utils import cache, latent, utils
 
@@ -16,11 +17,21 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 z_test = latent.encode_n(autoencoder, x_test, y_test, 3, save_cache=False)
-z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
+
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_class_distributions = None
+else: # BetaVAE
+    z_class_distributions = latent.class_distributions_n(
+        autoencoder,
+        x=x_train,
+        y=y_train,
+        n=2,
+        save_cache=True
+    )
 
 def compute_confusion_matrix(cm, certainties, labels, filename, title_prefix=""):
     accuracy = np.trace(cm) / np.sum(cm)
@@ -52,12 +63,16 @@ def process_class_translations(source_class, z_test, y_test, distributions, resu
     class_mask = (y_test == source_class)
     z_class = z_test[class_mask]
     
-    z_translations = np.repeat(z_class, 10, axis=0)
+    z_src = np.repeat(z_class, 10, axis=0)
     y_src = np.repeat([source_class], len(z_class) * 10)
     y_dst = np.tile(np.arange(10), len(z_class))
     
-    z_translated = latent.translate(z_translations, y_src, y_dst, distributions)
-    x_decoded = autoencoder.decoder.predict(z_translated, batch_size=128)
+    if autoencoder.decoder.requires_labels(): # CVAE
+        z_dst = latent.style_class_transform(z_src, y_dst)
+    else: # Beta-VAE
+        z_dst = latent.translate(z_src, y_src, y_dst, distributions)
+
+    x_decoded = autoencoder.decoder.predict(z_dst, batch_size=128)
     x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
     
     guessed_labels, _, certainties = utils.classify(x_decoded, classifier)
@@ -75,10 +90,17 @@ def process_class_translations(source_class, z_test, y_test, distributions, resu
 
 def process_inverse_translations(x_decoded_first, y_dst_labels, source_class, distributions):
     _, _, z_reencoded = autoencoder.encoder.predict(x_decoded_first, batch_size=128)
+
+    y_src = [source_class]*len(z_reencoded)
+
+    if autoencoder.decoder.requires_labels(): # CVAE
+        z_dst = latent.style_class_transform(z_reencoded, y_src)
+    else: # Beta-VAE
+        z_dst = latent.translate(z_reencoded, y_dst_labels, y_src, distributions)
     
-    z_inverse_trans = latent.translate(z_reencoded, y_dst_labels, [source_class]*len(z_reencoded), distributions)
+    #z_inverse_trans = latent.translate(z_reencoded, y_dst_labels, y_src, distributions)
     
-    x_decoded_final = autoencoder.decoder.predict(z_inverse_trans, batch_size=128)
+    x_decoded_final = autoencoder.decoder.predict(z_dst, batch_size=128)
     x_decoded_final = tf.image.resize(x_decoded_final, (28, 28)).numpy()
     guessed_labels, _, certainties = utils.classify(x_decoded_final, classifier)
     

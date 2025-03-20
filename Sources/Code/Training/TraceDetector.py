@@ -3,8 +3,8 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
+from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
+#from Code.Training.CVAE import CVAE, Encoder, Decoder, Sampling # Important
 from Code.Utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     )
 
     batch_size = 16
-    num_epochs = 10
+    num_epochs = 30
 
     x_train_l, y_train_l, x_train_r, y_train_r = utils.split_dataset(x_train, y_train, 0.5) # Moitié gauche pour le VAE
 
@@ -61,7 +61,8 @@ if __name__ == "__main__":
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
 
-    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
+    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
+    #autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
 
     z_src = latent.encode_n(
         autoencoder,
@@ -96,13 +97,38 @@ if __name__ == "__main__":
 
     y_trans = (y_src != y_dst).astype(int)
 
+    # todo balance?
+    ones_idx = np.where(y_trans == 1)[0]
+    zeros_idx = np.where(y_trans == 0)[0]
+
+    if len(ones_idx) > len(zeros_idx):
+        ones_idx_downsampled = np.random.choice(ones_idx, size=len(zeros_idx), replace=False)
+        zeros_idx_downsampled = zeros_idx
+    else:
+        zeros_idx_downsampled = np.random.choice(zeros_idx, size=len(ones_idx), replace=False)
+        ones_idx_downsampled = ones_idx
+
+    balanced_indices = np.concatenate([ones_idx_downsampled, zeros_idx_downsampled])
+    np.random.shuffle(balanced_indices)
+
+    x_dst_balanced = x_dst[balanced_indices]
+    y_trans_balanced = y_trans[balanced_indices]
+
     trace_classifier.fit(
+        x_dst_balanced,
+        y_trans_balanced,
+        batch_size=batch_size,
+        epochs=num_epochs,
+        validation_split=0.1
+    )
+
+    """trace_classifier.fit(
         x_dst,
         y_trans,
         batch_size=batch_size,
         epochs=num_epochs,
         validation_split=0.1
-    )
+    )"""
 
     model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
 
