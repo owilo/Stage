@@ -1,7 +1,8 @@
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 from matplotlib.widgets import CheckButtons
 
 from Code.Models import CVAE
