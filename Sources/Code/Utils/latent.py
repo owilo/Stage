@@ -49,7 +49,6 @@ def decode_n(autoencoder, z, y, n, save_cache=False):
 
     return cache.load_from_cache(key, _decode, save_cache)
 
-
 def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     if len(x) != len(y):
         raise ValueError(f"x ({len(x)}) et y ({len(y)}) doivent être de la même taille")
@@ -67,7 +66,7 @@ def class_distributions_n(autoencoder, x, y, n, save_cache=False):
             z_label = z[y == label]
             
             mean = np.mean(z_label, axis=0)
-            std = np.std(z_label, axis=0, mean=mean)
+            std = np.std(z_label, axis=0) # todo mean=mean dépendamment de la version de numpy
             
             result[label] = (mean, std)
         
@@ -89,15 +88,15 @@ def translate(z, source_y, destination_y, class_distributions, use_std=True):
         source_y = np.array(source_y)
         destination_y = np.array(destination_y)
         
-        src_means = np.array([class_distributions[c][0] for c in source_y])
-        src_stds  = np.array([class_distributions[c][1] for c in source_y])
-        dst_means = np.array([class_distributions[c][0] for c in destination_y])
-        dst_stds  = np.array([class_distributions[c][1] for c in destination_y])
+        src_mean = np.array([class_distributions[c][0] for c in source_y])
+        src_std  = np.array([class_distributions[c][1] for c in source_y])
+        dst_mean = np.array([class_distributions[c][0] for c in destination_y])
+        dst_std  = np.array([class_distributions[c][1] for c in destination_y])
         
         if use_std:
-            return dst_means + (dst_stds / src_stds) * (z - src_means)
+            return dst_mean + (dst_std / src_std) * (z - src_mean)
         else:
-            return z + dst_means - src_means
+            return z + dst_mean - src_mean
         
 def style_class_transform(z, y, num_classes=None):
     return (z, tf.keras.utils.to_categorical(y, num_classes=num_classes))

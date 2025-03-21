@@ -184,7 +184,7 @@ if __name__ == "__main__":
     x_train = tf.image.resize(x_train, (64, 64))
     x_test = tf.image.resize(x_test, (64, 64))
 
-    latent_dim = 128
+    latent_dim = 16
     beta = 6.0
     num_epochs = 10
     batch_size = 32
@@ -221,6 +221,6 @@ if __name__ == "__main__":
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
 
     if (len(sys.argv) > 1):
-        vae.save(MODEL_PATH / "h-betavae128.keras")
+        vae.save(MODEL_PATH / "h-betavae16.keras")
     else:
-        vae.save(MODEL_PATH / "betavae128.keras")
+        vae.save(MODEL_PATH / "betavae16.keras")

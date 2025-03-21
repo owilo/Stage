@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 from sklearn.manifold import TSNE
 from keras.datasets import mnist
-from keras.models import load_model
 from bokeh.plotting import figure, show
 from bokeh.io import output_file
 from bokeh.models import ColumnDataSource, HoverTool, CustomJS
@@ -19,10 +18,23 @@ from Code.Utils import cache, latent, utils
 
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
 
-z_test = latent.encode_n(autoencoder, x_test, 3, save_cache=True)
-z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
+z_test = latent.encode_n(
+    autoencoder,
+    x=x_test,
+    y=y_test,
+    n=3,
+    save_cache=True
+)
+
+z_class_distributions = latent.class_distributions_n(
+    autoencoder,
+    x=x_train,
+    y=y_train,
+    n=2,
+    save_cache=True
+)
 
 tsne = TSNE(n_components=2, random_state=1337, max_iter=300)
 x_tsne = tsne.fit_transform(z_test)

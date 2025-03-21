@@ -3,7 +3,7 @@ import tensorflow as tf
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-from Code.Models import BetaVAE, Classifier
+from Code.Models import BetaVAE, CVAE, Classifier
 from Code.Utils import cache, latent, utils
 
 np.random.seed(42)
@@ -26,7 +26,7 @@ digit_indices = np.array([
     5333  # 9
 ])
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 z_test = latent.encode_n(
@@ -37,13 +37,16 @@ z_test = latent.encode_n(
     save_cache=False
 )
 
-z_class_distributions = latent.class_distributions_n(
-    autoencoder,
-    x=x_train,
-    y=y_train,
-    n=2,
-    save_cache=True
-)
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_class_distributions = None
+else: # BetaVAE
+    z_class_distributions = latent.class_distributions_n(
+        autoencoder,
+        x=x_train,
+        y=y_train,
+        n=2,
+        save_cache=True
+    )
 
 fig, axes = plt.subplots(10, 10, figsize=(20, 20))
 
@@ -52,9 +55,12 @@ y_dst = np.tile(np.arange(10), 10)  # [0, 1, ..., 9, 0, 1, ..., 9]
 
 z_src = np.repeat(z_test, 10, axis=0)
 
-z_translated = latent.translate(z_src, y_src, y_dst, z_class_distributions)
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_dst = latent.style_class_transform(z_src, y_dst)
+else: # Beta-VAE
+    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
 
-x_decoded = autoencoder.decoder.predict(z_translated)
+x_decoded = autoencoder.decoder.predict(z_dst)
 x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy() # todo pour le classifieur
 
 guessed_classes, _, certainties = utils.classify(x_decoded, classifier)
