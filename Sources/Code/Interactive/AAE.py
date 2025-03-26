@@ -1,4 +1,4 @@
-"""import numpy as np
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -93,4 +93,4 @@ fig.canvas.mpl_connect('pick_event', on_pick)
 fig.canvas.mpl_connect('motion_notify_event', on_motion)
 fig.canvas.mpl_connect('button_release_event', on_release)
 
-plt.show()"""
+plt.show()

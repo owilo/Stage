@@ -49,30 +49,28 @@ def decode_n(autoencoder, z, y, n, save_cache=False):
 
     return cache.load_from_cache(key, _decode, save_cache)
 
+def class_distributions(z, y):
+    result = {}
+        
+    unique_labels = np.unique(y)
+    
+    for label in unique_labels:
+        z_label = z[y == label]
+        
+        mean = np.mean(z_label, axis=0)
+        std = np.std(z_label, axis=0) # todo mean=mean depending on numpy version
+        
+        result[label] = (mean, std)
+    
+    return result
+
 def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     if len(x) != len(y):
         raise ValueError(f"x ({len(x)}) et y ({len(y)}) doivent être de la même taille")
 
     key = "gms" + cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
-
-    def _class_distributions():
-        z = encode_n(autoencoder, x, y, n, False)
-
-        result = {}
-        
-        unique_labels = np.unique(y)
-        
-        for label in unique_labels:
-            z_label = z[y == label]
-            
-            mean = np.mean(z_label, axis=0)
-            std = np.std(z_label, axis=0) # todo mean=mean dépendamment de la version de numpy
-            
-            result[label] = (mean, std)
-        
-        return result
     
-    return cache.load_from_cache(key, _class_distributions, save_cache)
+    return cache.load_from_cache(key, lambda: class_distributions(encode_n(autoencoder, x, y, n, False), y), save_cache)
 
 def translate(z, y_src, y_dst, class_distributions, use_std=True):
     if len(z) != len(y_src) or len(y_src) != len(y_dst):

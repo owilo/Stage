@@ -14,13 +14,11 @@ class AAEEncoder(tf.keras.Model):
         self.latent_dim_style = latent_dim_style
         self.conv1 = layers.Conv2D(32, 3, strides=2, activation='relu', padding='same')
         self.conv2 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
-        self.conv3 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
+        self.conv3 = layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
         self.flatten = layers.Flatten()
         self.dense = layers.Dense(256, activation='relu')
-        # class
         self.z_mean_class = layers.Dense(latent_dim_class)
         self.z_log_var_class = layers.Dense(latent_dim_class)
-        # style
         self.z_mean_style = layers.Dense(latent_dim_style)
         self.z_log_var_style = layers.Dense(latent_dim_style)
         self.sampling = Sampling()
@@ -239,10 +237,10 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    latent_dim_class = 16
-    latent_dim_style = 16
-    beta = 6.0
-    gamma = 1.0
+    latent_dim_class = 8
+    latent_dim_style = 8
+    beta = 1.0
+    gamma = 0.1
     num_epochs = 20
     batch_size = 32
 
@@ -253,6 +251,9 @@ if __name__ == "__main__":
 
     vae.fit(x_train, y_train, epochs=num_epochs, batch_size=batch_size,
             validation_data=(x_test, y_test))
+    
+    dummy_x = np.random.rand(1, 28, 28, 1).astype("float32")
+    _ = vae(dummy_x)
 
     MODEL_PATH = cache.MODEL_FOLDER / "AAE"
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
