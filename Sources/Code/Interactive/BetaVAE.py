@@ -10,7 +10,7 @@ from Code.Utils import cache, utils
 
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
 
 (_, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
 

@@ -74,24 +74,27 @@ def class_distributions_n(autoencoder, x, y, n, save_cache=False):
     
     return cache.load_from_cache(key, _class_distributions, save_cache)
 
-def translate(z, source_y, destination_y, class_distributions, use_std=True):
+def translate(z, y_src, y_dst, class_distributions, use_std=True):
+    if len(z) != len(y_src) or len(y_src) != len(y_dst):
+        raise ValueError(f"x ({len(z)}), y_src ({len(y_src)}) et y_dst ({len(y_dst)}) doivent être de la même taille")
+    
     z = np.asarray(z)
 
-    if np.isscalar(source_y) and np.isscalar(destination_y):
-        src_mean, src_std = class_distributions[source_y]
-        dst_mean, dst_std = class_distributions[destination_y]
+    if np.isscalar(y_src) and np.isscalar(y_dst):
+        src_mean, src_std = class_distributions[y_src]
+        dst_mean, dst_std = class_distributions[y_dst]
         if use_std:
             return dst_mean + (dst_std / src_std) * (z - src_mean)
         else:
             return z + dst_mean - src_mean
     else:
-        source_y = np.array(source_y)
-        destination_y = np.array(destination_y)
+        y_src = np.array(y_src)
+        y_dst = np.array(y_dst)
         
-        src_mean = np.array([class_distributions[c][0] for c in source_y])
-        src_std  = np.array([class_distributions[c][1] for c in source_y])
-        dst_mean = np.array([class_distributions[c][0] for c in destination_y])
-        dst_std  = np.array([class_distributions[c][1] for c in destination_y])
+        src_mean = np.array([class_distributions[c][0] for c in y_src])
+        src_std  = np.array([class_distributions[c][1] for c in y_src])
+        dst_mean = np.array([class_distributions[c][0] for c in y_dst])
+        dst_std  = np.array([class_distributions[c][1] for c in y_dst])
         
         if use_std:
             return dst_mean + (dst_std / src_std) * (z - src_mean)
