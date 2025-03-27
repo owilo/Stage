@@ -81,11 +81,13 @@ class AAEDecoder(tf.keras.Model):
 class Classifier(tf.keras.Model):
     def __init__(self, latent_dim_class, num_classes=10, **kwargs):
         super().__init__(**kwargs)
-        self.dense = layers.Dense(32, activation='relu')
+        self.dense1 = layers.Dense(64, activation='relu')
+        self.dense2 = layers.Dense(32, activation='relu')
         self.out = layers.Dense(num_classes, activation='softmax')
 
     def call(self, inputs):
-        x = self.dense(inputs)
+        x = self.dense1(inputs)
+        x = self.dense2(x)
         return self.out(x)
 
     def get_config(self):
@@ -94,14 +96,17 @@ class Classifier(tf.keras.Model):
         return config
 
 @tf.keras.utils.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class AdvClassifier(tf.keras.Model):
     def __init__(self, latent_dim_style, num_classes=10, **kwargs):
         super().__init__(**kwargs)
-        self.dense = layers.Dense(32, activation='relu')
+        self.dense1 = layers.Dense(64, activation='relu')
+        self.dense2 = layers.Dense(32, activation='relu')
         self.out = layers.Dense(num_classes, activation='softmax')
 
     def call(self, inputs):
-        x = self.dense(inputs)
+        x = self.dense1(inputs)
+        x = self.dense2(x)
         return self.out(x)
 
     def get_config(self):
@@ -111,13 +116,16 @@ class AdvClassifier(tf.keras.Model):
 
 @tf.keras.utils.register_keras_serializable()
 class AAE(tf.keras.Model):
-    def __init__(self, latent_dim_class=16, latent_dim_style=16, beta=6.0, gamma=1.0, **kwargs):
+    def __init__(self, latent_dim_class=16, latent_dim_style=16, 
+                 beta_class=1.0, beta_style=0.0, gamma=1.0, **kwargs):
         super().__init__(**kwargs)
         self.latent_dim_class = latent_dim_class
         self.latent_dim_style = latent_dim_style
-        self.beta = beta  # KL divergence
-        self.gamma = gamma  # adversarial loss
-        self.encoder = AAEEncoder(latent_dim_class=latent_dim_class, latent_dim_style=latent_dim_style)
+        self.beta_class = beta_class
+        self.beta_style = beta_style
+        self.gamma = gamma
+        self.encoder = AAEEncoder(latent_dim_class=latent_dim_class, 
+                                 latent_dim_style=latent_dim_style)
         self.decoder = AAEDecoder()
         self.classifier = Classifier(latent_dim_class=latent_dim_class, num_classes=10)
         self.adv_classifier = AdvClassifier(latent_dim_style=latent_dim_style, num_classes=10)
@@ -146,25 +154,31 @@ class AAE(tf.keras.Model):
         with tf.GradientTape() as tape:
             z_mean_class, z_log_var_class, z_class, z_mean_style, z_log_var_style, z_style = self.encoder(images)
             reconstruction = self.decoder((z_class, z_style))
-            # reconstruction loss
+            
+            # Reconstruction loss
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(keras.losses.binary_crossentropy(images, reconstruction), axis=(1, 2))
             )
-            # KL divergence loss
+            
+            # KL losses
             kl_loss_class = -0.5 * tf.reduce_mean(
                 tf.reduce_sum(1 + z_log_var_class - tf.square(z_mean_class) - tf.exp(z_log_var_class), axis=1)
             )
+
             kl_loss_style = -0.5 * tf.reduce_mean(
                 tf.reduce_sum(1 + z_log_var_style - tf.square(z_mean_style) - tf.exp(z_log_var_style), axis=1)
             )
-            kl_loss = self.beta * (kl_loss_class + kl_loss_style)
-            # classification loss (class)
+            kl_loss = (self.beta_class * kl_loss_class) + (self.beta_style * kl_loss_style)
+            
+            # Classification loss
             class_pred = self.classifier(z_class)
             class_loss = tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, class_pred))
-            # adversarial loss (style)
+            
+            # Adversarial loss
             z_style_rev = self.grl(z_style)
             adv_pred = self.adv_classifier(z_style_rev)
             adv_loss = tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, adv_pred))
+            
             total_loss = reconstruction_loss + kl_loss + class_loss + self.gamma * adv_loss
 
         grads = tape.gradient(total_loss, self.trainable_weights)
@@ -195,7 +209,7 @@ class AAE(tf.keras.Model):
         kl_loss_style = -0.5 * tf.reduce_mean(
             tf.reduce_sum(1 + z_log_var_style - tf.square(z_mean_style) - tf.exp(z_log_var_style), axis=1)
         )
-        kl_loss = self.beta * (kl_loss_class + kl_loss_style)
+        kl_loss = (self.beta_class * kl_loss_class) + (self.beta_style * kl_loss_style)
         class_pred = self.classifier(z_class)
         class_loss = tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, class_pred))
         z_style_rev = self.grl(z_style)
@@ -220,7 +234,8 @@ class AAE(tf.keras.Model):
         config.update({
             "latent_dim_class": self.latent_dim_class,
             "latent_dim_style": self.latent_dim_style,
-            "beta": self.beta,
+            "beta_class": self.beta_class,
+            "beta_style": self.beta_style,
             "gamma": self.gamma,
         })
         return config
@@ -239,15 +254,19 @@ if __name__ == "__main__":
 
     latent_dim_class = 8
     latent_dim_style = 8
-    beta = 1.0
-    gamma = 0.1
+    beta_class = 6.0
+    beta_style = 0.0
+    gamma = 10.0
     num_epochs = 20
     batch_size = 32
 
     vae = AAE(latent_dim_class=latent_dim_class,
-                          latent_dim_style=latent_dim_style,
-                          beta=beta, gamma=gamma)
-    vae.compile(optimizer=keras.optimizers.Adam())
+              latent_dim_style=latent_dim_style,
+              beta_class=beta_class, 
+              beta_style=beta_style,
+              gamma=gamma)
+    
+    vae.compile(optimizer=keras.optimizers.Adam(learning_rate=1e-3))
 
     vae.fit(x_train, y_train, epochs=num_epochs, batch_size=batch_size,
             validation_data=(x_test, y_test))

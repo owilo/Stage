@@ -8,11 +8,11 @@ def decode(autoencoder, z, y):
     else:
         return autoencoder.decoder.predict(z)
 
-def encode_n(autoencoder, x, y, n, save_cache=False):
+def encode_n(autoencoder, x, y, n=1, save_cache=False, return_dist=False):
     """
     Applique alternativement l'encodage et le décodage n fois pour obtenir le résultat final encodé.
     """
-    key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
+    key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n) + str(int(return_dist))
 
     if autoencoder.decoder.requires_labels():
         y = tf.keras.utils.to_categorical(y)
@@ -20,16 +20,19 @@ def encode_n(autoencoder, x, y, n, save_cache=False):
     def _encode():
         if n < 1:
             raise ValueError("n doit être supérieur ou égal à 1")
-        _, _, r = autoencoder.encoder.predict(x) # todo
+        mean, log_var, r = autoencoder.encoder.predict(x) # todo
         for _ in range(1, n):
             r = decode(autoencoder, r, y)
-            _, _, r = autoencoder.encoder.predict(r)
-        return r
+            mean, log_var, r = autoencoder.encoder.predict(r)
+        if return_dist:
+            return mean, log_var, r
+        else:
+            return r
 
     return cache.load_from_cache(key, _encode, save_cache)
 
 
-def decode_n(autoencoder, z, y, n, save_cache=False):
+def decode_n(autoencoder, z, y, n=1, save_cache=False):
     """
     Applique alternativement le décodage et l'encodage n fois pour obtenir le résultat final décodé.
     """
