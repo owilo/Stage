@@ -74,7 +74,7 @@ length += np.random.rand()
 translation = np.random.rand(z_test.shape[-1])
 translation = length * np.linalg.norm(translation)
 
-threshold = np.sqrt(chi2.ppf(0.75, df=2)) # 80% des points devraient être dans l'ellipse de leur classe
+threshold = np.sqrt(chi2.ppf(0.75, df=2)) # 0.75% des points devraient être dans l'ellipse de leur classe
 
 z_src = z_test[digit: digit + 1]
 x_src = autoencoder.decoder.predict(z_src)
@@ -133,8 +133,8 @@ else:
 
         for digit_class in range(10):
             idx = np.where(y_train == digit_class)
-            ax.scatter(z_umap_train[idx, 0], z_umap_train[idx, 1],
-                    s=10, color=colors[digit_class], alpha=0.1, label=f"{digit_class}")
+            ax.scatter(z_umap_train[idx, 0], z_umap_train[idx, 1], s=10, color=colors[digit_class], alpha=0.1)
+            ax.scatter([], [], s=40, color=colors[digit_class], alpha=1, label=f"{digit_class}")
 
         ax.plot(umap_path[:, 0], umap_path[:, 1], color='red', lw=2, marker='o', markersize=3, label="Translation")
         ax.plot(umap_inv_path[:, 0], umap_inv_path[:, 1], color='green', lw=2, marker='o', markersize=3, label="Translation Inverse")
@@ -152,11 +152,12 @@ else:
             cov = np.linalg.inv(inv_cov)
             plot_cov_ellipse(mean, cov, ax, nstd=threshold, edgecolor='blue', fc='None', lw=2)
 
-        ax.set_title("Trajectoire sur l'espace UMAP")
+        ax.set_title("Translation (UMAP)")
         ax.legend()
+        plt.tight_layout()
         plt.savefig(cache.RESULTS_FOLDER / f"mnist-ellipse-translation-umap-{digit}.png")
         
-        fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+        fig, axs = plt.subplots(1, 4, figsize=(12, 3))
         
         axs[0].imshow(x_test[digit].squeeze(), cmap="gray")
         axs[0].set_title("Source")
@@ -167,11 +168,11 @@ else:
         axs[1].axis("off")
         
         axs[2].imshow(x_dst.squeeze(), cmap="gray")
-        axs[2].set_title(f"Translation\n({iter_dst} it.)")
+        axs[2].set_title(f"Translation ({iter_dst} it.)")
         axs[2].axis("off")
         
         axs[3].imshow(x_invsrc.squeeze(), cmap="gray")
-        axs[3].set_title(f"Translation Inverse\n({iter_inv} it.)")
+        axs[3].set_title(f"Translation Inverse ({iter_inv} it.)")
         axs[3].axis("off")
         
         plt.tight_layout()

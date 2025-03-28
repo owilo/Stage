@@ -47,6 +47,28 @@ for i in range(100):
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-uniform.png")
 
+# Prior
+
+print("Prior")
+
+z_min = np.min(z_train, axis=0)
+z_max = np.max(z_train, axis=0)
+
+num_samples = 10000
+sampled_latents = np.random.normal(size=(num_samples, z_train.shape[1]))
+
+decoded_images = autoencoder.decoder.predict(sampled_latents)
+
+idx = np.random.choice(len(decoded_images), 100, replace=False)
+
+plt.figure(figsize=(20, 20))
+for i in range(100):
+    ax = plt.subplot(10, 10, i + 1)
+    plt.imshow(decoded_images[idx[i]].squeeze(), cmap="gray")
+    ax.axis("off")
+plt.tight_layout()
+plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-prior.png")
+
 # VAE Distribution
 
 print("Distribution du VAE")
