@@ -1,18 +1,66 @@
 import json
 import tensorflow as tf
+import os
 
 from Code.Models import *
 from Code.Utils import cache
 
-def save_model():
-    pass
+import json
 
-def cleanup():
-    pass
+"""test = {
+    "type": "VAE",
+    "category": "testVAE",
+    "file": "testvae.keras",
+    "input_shape": [32, 32, 1],
+    "output_shape": [32, 32, 1],
+    "latent_shape": [32],
+    "labels": False,
+    "dataset_range": [0, 1]
+}"""
 
 AE_FORMATTER = lambda model: f"{model['category']} - {tuple(model['input_shape'])} → {tuple(model['latent_shape'])} → {tuple(model['output_shape'])} | Dataset : {(100.0 * (model['dataset_range'][1] - model['dataset_range'][0])):.2f}%"
 
+def cleanup_models(models_file="models.json"):
+    models_path = cache.MODEL_FOLDER / models_file
+    try:
+        with open(models_path, "r") as f:
+            models = json.load(f)
+    except FileNotFoundError:
+        print(f"Aucun fichier '{models_file}'.")
+        return []
+
+    removed_entries = []
+    updated_models = []
+    for model in models:
+        model_file = cache.MODEL_FOLDER / model.get("category", "") / model.get("file", "")
+        if model_file.exists():
+            updated_models.append(model)
+        else:
+            removed_entries.append(model)
+
+    with open(models_path, "w") as f:
+        json.dump(updated_models, f, indent=4)
+
+    if removed_entries:
+        print(f"{len(removed_entries)} modèle(s) supprimé(s), car le(s) fichier(s) renseigné(s) n'existe(nt) pas.")
+
+    return removed_entries
+
+def save_model(new_model, models_file="models.json"):
+    cleanup_models(models_file)
+    try:
+        with open(cache.MODEL_FOLDER / models_file, "r") as f:
+            models = json.load(f)
+    except FileNotFoundError:
+        models = []
+
+    models.append(new_model)
+
+    with open(models_file, "w") as f:
+        json.dump(models, f, indent=4)
+
 def list_models(criteria={}, formatter=None, models_file="models.json"):
+    cleanup_models(models_file)
     with open(cache.MODEL_FOLDER / models_file, "r") as f:
         models = json.load(f)
     

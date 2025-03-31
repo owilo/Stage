@@ -13,7 +13,7 @@ tf.keras.utils.set_random_seed(42)
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
 autoencoder = models.select_model(models.list_models(
-    criteria={"type": "VAE"},
+    criteria={"type": "VAE", "latent_shape": (16,)},
     formatter=models.AE_FORMATTER
 ))
 
