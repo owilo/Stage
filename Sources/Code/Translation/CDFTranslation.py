@@ -13,11 +13,11 @@ x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
 
-z = latent.encode_n(
+z = latent.encode(
     autoencoder,
     x=x_train,
     y=y_train,
-    n=2,
+    n_times=2,
     save_cache=True
 )
 

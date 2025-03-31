@@ -16,25 +16,43 @@ MODEL_FOLDER = get_env_folder("MODEL_PATH")
 RESULTS_FOLDER = get_env_folder("RESULTS_PATH")
 IMAGES_FOLDER = get_env_folder("IMAGES_PATH")
 
-def load_from_cache(data_id, supplier, save_cache=True):
-    if not data_id.endswith(".pkl"):
-        data_id += ".pkl"  # todo for npy too
+import os
+import pickle
+import xxhash
+import numpy as np
+
+def load_from_cache(data_id, supplier, save_cache=True, verbose=False):
+    hash_str = xxhash.xxh128_hexdigest(data_id)
+    npy_file = CACHE_FOLDER / (hash_str + ".npy")
+    pkl_file = CACHE_FOLDER / (hash_str + ".pkl")
     
     os.makedirs(CACHE_FOLDER, exist_ok=True)
     
-    cache_file = CACHE_FOLDER / data_id
-    if cache_file.exists():
-        with open(cache_file, "rb") as file:
+    if npy_file.exists():
+        data = np.load(npy_file, allow_pickle=True)
+        if verbose:
+            print(f"Données chargées depuis '{npy_file}'.")
+        return data
+    elif pkl_file.exists():
+        with open(pkl_file, "rb") as file:
             data = pickle.load(file)
-        print(f"Données chargées depuis '{cache_file}'.")
+        if verbose:
+            print(f"Données chargées depuis '{pkl_file}'.")
         return data
     else:
-        print(f"Le fichier cache '{cache_file}' n'existe pas. Génération des données...")
+        if verbose:
+            print(f"Aucun fichier cache trouvé. Génération des données...")
         data = supplier()
         if save_cache:
-            with open(cache_file, "wb") as file:
-                pickle.dump(data, file)
-            print(f"Données sauvegardées vers '{cache_file}'.")
+            if isinstance(data, np.ndarray):
+                np.save(npy_file, data)
+                if verbose:
+                    print(f"Données sauvegardées vers '{npy_file}'.")
+            else:
+                with open(pkl_file, "wb") as file:
+                    pickle.dump(data, file)
+                if verbose:
+                    print(f"Données sauvegardées vers '{pkl_file}'.")
         return data
 
 def model_hash(model):

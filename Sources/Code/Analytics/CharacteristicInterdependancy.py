@@ -1,41 +1,43 @@
 import numpy as np
+import tensorflow as tf
+from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-from keras.datasets import mnist
-import tensorflow.keras.backend as K
-import tensorflow as tf
-from tensorflow.keras.models import load_model
+from Code.Models import BetaVAE
+from Code.Utils import cache, latent, utils
 
-import Utils
-
-K.clear_session()
 np.random.seed(42)
+tf.keras.utils.set_random_seed(42)
 
-(X_train, Y_train), (X_valid, Y_valid) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-X_train = X_train.astype("float32") / 255.
-X_train = X_train.reshape(-1, 28, 28, 1)
-X_valid = X_valid.astype("float32") / 255.
-X_valid = X_valid.reshape(-1, 28, 28, 1)
+x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-X_train = tf.image.resize(X_train, (64, 64))
-X_valid = tf.image.resize(X_valid, (64, 64))
+autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
 
-batch_size = 32
+z_train = latent.encode(
+    autoencoder,
+    x=x_train,
+    y=y_train,
+    n_times=2,
+    save_cache=True
+)
 
-encoder = load_model("./Models/DISVAE/mnist-16-encoder.keras")
-decoder = load_model("./Models/DISVAE/mnist-16-decoder.keras")
-
-X_reencoded_train = Utils.encoded(X_train, "train_disvae", encoder, decoder, 2, batch_size)
-X_reencoded_valid = Utils.encoded(X_valid, "test_disvae", encoder, decoder, 2, batch_size)
+z_test = latent.encode(
+    autoencoder,
+    x=x_test,
+    y=y_test,
+    n_times=3,
+    save_cache=True
+)
 
 src_class = 0
 dst_class = 1
 
-X_class_src = X_reencoded_train[Y_train == src_class]
-X_class_dst = X_reencoded_train[Y_train == dst_class]
+z_class_src = z_train[y_train == src_class]
+z_class_dst = z_train[y_train == dst_class]
 
-z = X_class_dst
+z = z_class_dst
 z0 = z[:, 0]
 
 q1, q3 = np.percentile(z0, [25, 75])
@@ -63,7 +65,7 @@ for i, center in enumerate(bin_centers):
 
 fig, ax = plt.subplots(figsize=(10, 6))
 
-dest_data = [X_class_dst[:, i] for i in range(16)]
+dest_data = [z_class_dst[:, i] for i in range(16)]
 bp_dst = ax.boxplot(dest_data, positions=np.arange(16), patch_artist=True, widths=0.5,
                     showfliers=False,
                     boxprops=dict(facecolor='lightgreen', color='green'),
@@ -92,8 +94,23 @@ ax.set_xticks(x_ticks)
 ax.set_xticklabels(labels)
 ax.set_xlabel("Dimension latente")
 ax.set_ylabel("Valeur")
-ax.set_title("Évolution de la moyenne des dimensions latentes en fonction de z0")
+ax.set_title(f"Évolution de la moyenne des dimensions latentes en fonction de z0 ({src_class}→{dst_class})")
 ax.legend(title="z0 fixé", bbox_to_anchor=(1.05, 1), loc='upper left')
 
 plt.tight_layout()
-plt.savefig("./Results/mnist-trace-combinations.png")
+plt.savefig(cache.RESULTS_FOLDER / "CharacteristicsInterdependancy" / "mnist-interdependancy.png")
+
+cmap = plt.cm.tab20
+colors = [cmap(i) for i in range(16)]
+
+plt.figure(figsize=(10, 6))
+for dim in range(1, z.shape[1]):
+    plt.plot(bin_centers, conditional_means[dim], marker='o', label=f'z{dim}', color=colors[dim - 1])
+
+plt.xlabel("z0 fixé")
+plt.ylabel("Moyenne de la dimension latente")
+plt.title(f"Évolution de la moyenne des dimensions latentes en fonction de z0 ({src_class}→{dst_class})")
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+plt.tight_layout()
+plt.savefig(cache.RESULTS_FOLDER / "CharacteristicsInterdependancy" / "mnist-interdependancy-evolution.png")

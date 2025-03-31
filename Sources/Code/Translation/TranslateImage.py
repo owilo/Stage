@@ -56,11 +56,11 @@ y_dst = np.arange(10)
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst, num_classes=10)
 else: # Beta-VAE
-    z_class_distributions = latent.class_distributions_n(
+    z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train,
         y=y_train,
-        n=2,
+        n_times=2,
         save_cache=True
     )
 

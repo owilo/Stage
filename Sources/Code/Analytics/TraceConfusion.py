@@ -59,22 +59,22 @@ model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
 trace_classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-classifier-{model_type}.keras")
 trace_detector = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-detector-{model_type}.keras")
 
-z_src = latent.encode_n(
+z_src = latent.encode(
     autoencoder,
     x=x_src,
     y=y_src,
-    n=3,
+    n_times=3,
     save_cache=True
 )
 
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst)
 else: # Beta-VAE
-    z_class_distributions = latent.class_distributions_n(
+    z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train_l,
         y=y_train_l,
-        n=2,
+        n_times=2,
         save_cache=True
     )
 

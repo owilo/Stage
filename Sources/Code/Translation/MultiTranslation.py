@@ -36,22 +36,22 @@ guessed_sources = guessed_src.reshape(10, 10)
 certainties_sources = cert_src.reshape(10, 10)
 
 selected_indices = digits.flatten()
-z_test = latent.encode_n(
+z_test = latent.encode(
     autoencoder, 
     x=x_test[selected_indices],
     y=y_test[selected_indices],
-    n=3,
+    n_times=3,
     save_cache=False
 )
 
 if autoencoder.decoder.requires_labels(): # CVAE
     z_class_distributions = None
 else: # BetaVAE
-    z_class_distributions = latent.class_distributions_n(
+    z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train,
         y=y_train,
-        n=2,
+        n_times=2,
         save_cache=True
     )
 

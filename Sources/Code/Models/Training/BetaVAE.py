@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 import math
 import numpy as np
 import sys
+import argparse
 
 from Code.Models.Common.layers import Sampling
 from Code.Utils import cache, utils
@@ -184,22 +185,34 @@ if __name__ == "__main__":
     x_train = tf.image.resize(x_train, (64, 64))
     x_test = tf.image.resize(x_test, (64, 64))
 
-    latent_dim = 16
-    beta = 6.0
-    num_epochs = 10
-    batch_size = 32
+    parser = argparse.ArgumentParser(description="BetaVAE")
+    parser.add_argument("-l", type=int, default=128, help="Taille du vecteur latent")
+    parser.add_argument("-e", type=int, default=5, help="Nombre d'époques")
+    parser.add_argument("-b", type=int, default=32, help="Taille de batch")
+    parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test.")
+    parser.add_argument("--beta", type=float, default=6.0, help="Beta")
+
+    args = parser.parse_args()
+
+    latent_dim = args.l
+    num_epochs = args.e
+    batch_size = args.b
+    dataset_size = args.ds
+    beta = args.beta
+
+    print(f">> l : {args.l}, β : {args.beta}, e : {num_epochs}, b : {batch_size}")
 
     vae = BetaVAE(latent_dim=latent_dim, beta=beta)
     vae.compile(optimizer=keras.optimizers.Adam())
 
-    if (len(sys.argv) > 1):
-        p = max(0.0, min(float(sys.argv[1]), 1.0))
+    if (dataset_size < 1.0):
+        p = max(0.0, min(dataset_size), 1.0)
         print(f">> Taille du dataset d'entraînement : {p}")
 
         x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, p)
         vae.fit(
             x_train_left,
-            epochs=math.ceil(num_epochs / p),
+            epochs=num_epochs,
             batch_size=batch_size,
             validation_split=0.1,
             validation_batch_size=batch_size
@@ -221,6 +234,6 @@ if __name__ == "__main__":
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
 
     if (len(sys.argv) > 1):
-        vae.save(MODEL_PATH / "h-betavae16.keras")
+        vae.save(MODEL_PATH / f"h-betavae-{latent_dim}.keras")
     else:
-        vae.save(MODEL_PATH / "betavae16.keras")
+        vae.save(MODEL_PATH / f"betavae-{latent_dim}.keras")

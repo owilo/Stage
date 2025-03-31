@@ -63,22 +63,22 @@ if __name__ == "__main__":
     autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
     #autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
 
-    z_src = latent.encode_n(
+    z_src = latent.encode(
         autoencoder,
         x=x_src,
         y=y_src,
-        n=3,
+        n_times=3,
         save_cache=True
     )
 
     if autoencoder.decoder.requires_labels():
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        z_class_distributions = latent.class_distributions_n(
+        z_class_distributions = latent.encode_class_distributions(
             autoencoder,
             x=x_train_l,
             y=y_train_l,
-            n=2,
+            n_times=2,
             save_cache=True
         )
         

@@ -1,27 +1,24 @@
 from . import cache
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf    
 
-def decode(autoencoder, z, y):
-    if autoencoder.decoder.requires_labels():
-        return autoencoder.decoder.predict((z, y))
-    else:
-        return autoencoder.decoder.predict(z)
+def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, verbose=None):
+    """
+    Applique alternativement l'encodage et le décodage n_times fois pour obtenir le résultat final encodé.
+    """
+    if verbose is None:
+        verbose = save_cache
 
-def encode_n(autoencoder, x, y, n=1, save_cache=False, return_dist=False):
-    """
-    Applique alternativement l'encodage et le décodage n fois pour obtenir le résultat final encodé.
-    """
-    key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n) + str(int(return_dist))
+    key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n_times) + str(int(return_dist))
 
     if autoencoder.decoder.requires_labels():
         y = tf.keras.utils.to_categorical(y)
 
     def _encode():
-        if n < 1:
-            raise ValueError("n doit être supérieur ou égal à 1")
+        if n_times < 1:
+            raise ValueError("n_times doit être supérieur ou égal à 1")
         mean, log_var, r = autoencoder.encoder.predict(x) # todo
-        for _ in range(1, n):
+        for _ in range(1, n_times):
             r = decode(autoencoder, r, y)
             mean, log_var, r = autoencoder.encoder.predict(r)
         if return_dist:
@@ -29,30 +26,42 @@ def encode_n(autoencoder, x, y, n=1, save_cache=False, return_dist=False):
         else:
             return r
 
-    return cache.load_from_cache(key, _encode, save_cache)
+    return cache.load_from_cache(key, _encode, save_cache, verbose)
 
 
-def decode_n(autoencoder, z, y, n=1, save_cache=False):
+def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None):
     """
-    Applique alternativement le décodage et l'encodage n fois pour obtenir le résultat final décodé.
+    Applique alternativement le décodage et l'encodage n_times fois pour obtenir le résultat final décodé.
     """
-    key = cache.model_hash(autoencoder) + cache.data_hash(z) + cache.data_hash(y) + str(n)
+    if verbose is None:
+        verbose = save_cache
+
+    key = cache.model_hash(autoencoder) + cache.data_hash(z) + cache.data_hash(y) + str(n_times)
 
     if autoencoder.decoder.requires_labels():
         y = tf.keras.utils.to_categorical(y)
     
+    def autoencoder_dependant_decode(zp, yp):
+        if autoencoder.decoder.requires_labels():
+            return autoencoder.decoder.predict((zp, yp))
+        else:
+            return autoencoder.decoder.predict(zp)
+
     def _decode():
-        if n < 1:
-            raise ValueError("n doit être supérieur ou égal à 1")
-        r = decode(autoencoder, z, y)
-        for _ in range(1, n):
+        if n_times < 1:
+            raise ValueError("n_times doit être supérieur ou égal à 1")
+        r = autoencoder_dependant_decode(z, y)
+        for _ in range(1, n_times):
             _, _, r = autoencoder.encoder.predict(r) #todo
-            r = decode(autoencoder, r, y)
+            r = autoencoder_dependant_decode(r, y)
         return r
 
-    return cache.load_from_cache(key, _decode, save_cache)
+    return cache.load_from_cache(key, _decode, save_cache, verbose)
 
 def class_distributions(z, y):
+    if len(z) != len(y):
+        raise ValueError(f"z ({len(z)}) et y ({len(y)}) doivent être de la même taille")
+
     result = {}
         
     unique_labels = np.unique(y)
@@ -67,13 +76,16 @@ def class_distributions(z, y):
     
     return result
 
-def class_distributions_n(autoencoder, x, y, n, save_cache=False):
+def encode_class_distributions(autoencoder, x, y, n_times=1, save_cache=False, verbose=None):
     if len(x) != len(y):
         raise ValueError(f"x ({len(x)}) et y ({len(y)}) doivent être de la même taille")
-
-    key = "gms" + cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n)
     
-    return cache.load_from_cache(key, lambda: class_distributions(encode_n(autoencoder, x, y, n, False), y), save_cache)
+    if verbose is None:
+        verbose = save_cache
+
+    key = "distrib" + cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n_times)
+    
+    return cache.load_from_cache(key, lambda: class_distributions(encode(autoencoder, x, y, n_times, False), y), save_cache, verbose)
 
 def translate(z, y_src, y_dst, class_distributions, use_std=True):
     if len(z) != len(y_src) or len(y_src) != len(y_dst):

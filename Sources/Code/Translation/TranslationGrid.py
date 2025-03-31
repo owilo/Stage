@@ -29,22 +29,22 @@ digit_indices = np.array([
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae128.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
-z_test = latent.encode_n(
+z_test = latent.encode(
     autoencoder,
     x=x_test[digit_indices],
     y=y_test[digit_indices],
-    n=3,
+    n_times=3,
     save_cache=False
 )
 
 if autoencoder.decoder.requires_labels(): # CVAE
     z_class_distributions = None
 else: # BetaVAE
-    z_class_distributions = latent.class_distributions_n(
+    z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train,
         y=y_train,
-        n=2,
+        n_times=2,
         save_cache=True
     )
 

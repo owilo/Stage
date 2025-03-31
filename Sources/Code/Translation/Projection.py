@@ -37,8 +37,8 @@ digits = np.array([
 y_src = 2
 y_dst = 6
 
-z_test_src = latent.encode_n(autoencoder, x_test, y_test, 3, save_cache=True)
-z_class_distributions = latent.class_distributions_n(autoencoder, x_train, y_train, 2, save_cache=True)
+z_test_src = latent.encode(autoencoder, x_test, y_test, 3, save_cache=True)
+z_class_distributions = latent.encode_class_distributions(autoencoder, x_train, y_train, 2, save_cache=True)
 
 source_classes = np.full(10, y_src)
 destination_classes = np.full(10, y_dst)
@@ -94,7 +94,7 @@ plt.arrow([], [], [], [], color="purple", width=0.01, head_width=0.2, length_inc
 plt.title(f"t-SNE : Translation de {y_src} vers {y_dst}")
 plt.legend()
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-tsne.png")
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-translation-tsne.png")
 
 # ACP 2D
 pca2d = PCA(n_components=2, random_state=1337)
@@ -138,7 +138,7 @@ plt.arrow([], [], [], [], color="purple", width=0.01, head_width=0.2, length_inc
 plt.title(f"ACP 2D : Translation de {y_src} vers {y_dst}")
 plt.legend()
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-pca2d.png")
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-translation-pca2d.png")
 
 # ACP 3D
 pca3d = PCA(n_components=3, random_state=1337)
@@ -176,7 +176,7 @@ for i in range(10):
 ax.legend()
 plt.title(f"ACP 3D : Translation de {y_src} vers {y_dst}")
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-pca3d.png")
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-translation-pca3d.png")
 
 # LDA
 labels_all = np.concatenate((y_test, np.full(10, y_dst), np.array([y_src, y_dst])))
@@ -222,4 +222,4 @@ plt.arrow([], [], [], [], color="purple", width=0.01, head_width=0.2, length_inc
 plt.title(f"LDA : Translation de {y_src} vers {y_dst}")
 plt.legend()
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-lda.png")
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-translation-lda.png")

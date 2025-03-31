@@ -16,19 +16,19 @@ x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
 
-z_class_distributions = latent.class_distributions_n(
+z_class_distributions = latent.encode_class_distributions(
     autoencoder,
     x=x_train,
     y=y_train,
-    n=2,
+    n_times=2,
     save_cache=True
 )
 
-z_test = latent.encode_n(
+z_test = latent.encode(
     autoencoder,
     x=x_test,
     y=y_test,
-    n=3,
+    n_times=3,
     save_cache=True
 )
 

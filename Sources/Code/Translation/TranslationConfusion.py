@@ -18,16 +18,16 @@ x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16.keras")
 classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
-z_test = latent.encode_n(autoencoder, x_test, y_test, 3, save_cache=False)
+z_test = latent.encode(autoencoder, x_test, y_test, 3, save_cache=False)
 
 if autoencoder.decoder.requires_labels(): # CVAE
     z_class_distributions = None
 else: # BetaVAE
-    z_class_distributions = latent.class_distributions_n(
+    z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train,
         y=y_train,
-        n=2,
+        n_times=2,
         save_cache=True
     )
 
