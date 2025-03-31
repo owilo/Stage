@@ -2,11 +2,12 @@ import numpy as np
 import tensorflow as tf
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
+
 from Code.Models import BetaVAE
 from Code.Utils import cache, latent, utils
 
-np.random.seed(1337)
-tf.keras.utils.set_random_seed(1337)
+np.random.seed(42)
+tf.keras.utils.set_random_seed(42)
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
