@@ -66,11 +66,11 @@ c = 0.5
 
 fig, axes = plt.subplots(nrows=10, ncols=10, figsize=(20, 20))
 
-for i in range(10):
+for i in range(5):
     for j in range(10):
-        idx = i * 5 + j
+        idx = i * 10 + j
         sample_img = x_test[idx:idx+1]  
-        z_test, _, _ = autoencoder.encoder.predict(sample_img)
+        _, _, z_test = autoencoder.encoder.predict(sample_img)
         z_test = z_test.flatten()
 
         u_test = map_to_uniform(z_test, cdf_functions)
