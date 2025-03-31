@@ -4,8 +4,7 @@ from keras.datasets import mnist
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from Code.Models import BetaVAE
-from Code.Utils import cache, latent, utils
+from Code.Utils import cache, latent, utils, models
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -13,7 +12,10 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
+autoencoder = models.select_model(models.list_models(
+    criteria={"type": "VAE"},
+    formatter=models.AE_FORMATTER
+))
 
 y_src = 0
 y_dst = 1

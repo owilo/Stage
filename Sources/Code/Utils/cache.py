@@ -74,3 +74,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "empty":
         clear_cache()
         print("Tous les fichiers du cache ont été supprimés")
+    else:
+        print("Pour supprimer tous les fichiers du cache : 'cache empty'")

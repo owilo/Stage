@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 def group_by_class(x, y):
     return {cls: x[y == cls] for cls in np.unique(y)}
@@ -102,3 +103,6 @@ def shuffle(*arrays, seed=0):
     indices = np.arange(len(arrays[0]))
     rng.shuffle(indices)
     return tuple(arr[indices] for arr in arrays)
+
+def resize(x, shape):
+    return tf.image.resize(x, shape).numpy()

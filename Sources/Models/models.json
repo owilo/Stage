@@ -1,0 +1,58 @@
+[
+    {
+        "type": "VAE",
+        "category": "BetaVAE",
+        "file": "betavae128.keras",
+        "input_shape": [64, 64, 1],
+        "output_shape": [64, 64, 1],
+        "latent_shape": [128],
+        "labels": false,
+        "dataset_range": [0, 1]
+    },
+    {
+        "type": "VAE",
+        "category": "BetaVAE",
+        "file": "betavae16.keras",
+        "input_shape": [64, 64, 1],
+        "output_shape": [64, 64, 1],
+        "latent_shape": [16],
+        "labels": false,
+        "dataset_range": [0, 1]
+    },
+    {
+        "type": "VAE",
+        "category": "BetaVAE",
+        "file": "h-betavae16.keras",
+        "input_shape": [64, 64, 1],
+        "output_shape": [64, 64, 1],
+        "latent_shape": [16],
+        "labels": false,
+        "dataset_range": [0, 0.5]
+    },
+    {
+        "type": "VAE",
+        "category": "CVAE",
+        "file": "cvae16.keras",
+        "input_shape": [28, 28, 1],
+        "output_shape": [28, 28, 1],
+        "latent_shape": [16],
+        "labels": true,
+        "dataset_range": [0, 1]
+    },
+    {
+        "type": "Classifier",
+        "category": "Classifier",
+        "file": "classifier.keras",
+        "input_shape": [28, 28, 1],
+        "output_shape": [10],
+        "dataset_range": [0, 1]
+    },
+    {
+        "type": "TransformDetector",
+        "category": "Classifier",
+        "file": "tdetector.keras",
+        "input_shape": [28, 28, 1],
+        "output_shape": [10],
+        "dataset_range": [0.5, 1]
+    }
+]
