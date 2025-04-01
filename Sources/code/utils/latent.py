@@ -282,7 +282,7 @@ import numpy as np
 import ot
 from sklearn.preprocessing import StandardScaler
 
-def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.4):
+def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.3):
     classes = np.unique(y_classes)
     class_pairs = [(src, dst) for src in classes for dst in classes if src != dst]
     
@@ -313,7 +313,7 @@ def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.4):
 
         # transport_plan = ot.sinkhorn(a, b, M, reg=0.275, numItermax=10000)
         #transport_plan = ot.emd(a, b, M, numItermax=5000000)
-        transport_plan = ot.bregman.sinkhorn_log(a, b, M, reg=0.15, numItermax=10000)
+        transport_plan = ot.bregman.sinkhorn_log(a, b, M, reg=0.15, numItermax=15000)
 
         mappings[(src_cls, dst_cls)] = {
             'scaler': scaler,
