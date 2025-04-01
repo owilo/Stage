@@ -3,7 +3,7 @@ import tensorflow as tf
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-from code.models import BetaVAE, CVAE, Classifier
+from code.models import betaVAE, CVAE, classifier
 from code.utils import cache, latent, utils
 
 np.random.seed(42)

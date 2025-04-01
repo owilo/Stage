@@ -7,9 +7,9 @@ import argparse
 from code.utils import utils, models
 
 @tf.keras.utils.register_keras_serializable()
-class Classifier(keras.Model):
+class classifier(keras.Model):
     def __init__(self, **kwargs):
-        super(Classifier, self).__init__(**kwargs)
+        super(classifier, self).__init__(**kwargs)
         self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(32, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     num_epochs = args.e
     batch_size = args.b
 
-    classifier = Classifier()
+    classifier = classifier()
     classifier.build(input_shape=(None, 28, 28, 1))
     classifier.summary()
 

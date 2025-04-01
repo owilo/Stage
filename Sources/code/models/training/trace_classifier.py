@@ -8,9 +8,9 @@ from code.models import CVAE # Important
 from code.utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
-class TraceClassifier(keras.Model):
+class trace_classifier(keras.Model):
     def __init__(self, **kwargs):
-        super(TraceClassifier, self).__init__(**kwargs)
+        super(trace_classifier, self).__init__(**kwargs)
         self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(64, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    trace_classifier = TraceClassifier()
+    trace_classifier = trace_classifier()
     trace_classifier.build(input_shape=(None, 28, 28, 1))
     trace_classifier.summary()
 

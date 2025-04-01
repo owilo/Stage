@@ -6,7 +6,7 @@ from keras.datasets import mnist
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-from code.models import CVAE, Classifier
+from code.models import CVAE, classifier
 from code.utils import cache, latent, utils
 
 np.random.seed(42)
