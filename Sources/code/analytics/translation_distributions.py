@@ -13,8 +13,7 @@ tf.keras.utils.set_random_seed(42)
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
 autoencoder, _ = models.select_model(models.list_models(
-    criteria={"type": "autoencoder", "labels": False, "latent_shape": (16,), "dataset_range": (0, 1)},
-    formatter=models.ae_formatter
+    criteria={"type": "autoencoder", "labels": False, "latent_shape": (16,), "dataset_range": (0, 1)}
 ))
 
 y_src = 0

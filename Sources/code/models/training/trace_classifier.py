@@ -8,9 +8,9 @@ from code.models import CVAE # Important
 from code.utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
-class trace_classifier(keras.Model):
+class TraceClassifier(keras.Model):
     def __init__(self, **kwargs):
-        super(trace_classifier, self).__init__(**kwargs)
+        super(TraceClassifier, self).__init__(**kwargs)
         self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(64, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
@@ -39,11 +39,11 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    trace_classifier = trace_classifier()
-    trace_classifier.build(input_shape=(None, 28, 28, 1))
-    trace_classifier.summary()
+    TraceClassifier = TraceClassifier()
+    TraceClassifier.build(input_shape=(None, 28, 28, 1))
+    TraceClassifier.summary()
 
-    trace_classifier.compile(
+    TraceClassifier.compile(
         loss="categorical_crossentropy", 
         optimizer=keras.optimizers.Adam(), 
         metrics=["accuracy"]
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     y_src_categorical = keras.utils.to_categorical(y_src, 10)
 
-    trace_classifier.fit(
+    TraceClassifier.fit(
         x_dst,
         y_src_categorical,
         batch_size=batch_size,
@@ -108,4 +108,4 @@ if __name__ == "__main__":
 
     MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
     MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    trace_classifier.save(MODEL_PATH / f"trace-classifier-{model_type}.keras")
+    TraceClassifier.save(MODEL_PATH / f"trace-classifier-{model_type}.keras")

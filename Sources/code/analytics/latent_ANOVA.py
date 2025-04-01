@@ -5,7 +5,7 @@ from sklearn import feature_selection
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from code.models import betaVAE
+from code.models import BetaVAE
 from code.utils import cache, latent, utils
 
 np.random.seed(42)

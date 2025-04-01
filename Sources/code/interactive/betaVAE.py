@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.datasets import mnist
 
-from code.models import betaVAE
+from code.models import BetaVAE
 from code.utils import cache, utils
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()

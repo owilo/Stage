@@ -3,13 +3,13 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-from code.models import betaVAE # Important
+from code.models import BetaVAE # Important
 from code.utils import cache, latent, utils
 
 @tf.keras.utils.register_keras_serializable()
-class trace_detector(keras.Model):
+class TraceDetector(keras.Model):
     def __init__(self, **kwargs):
-        super(trace_detector, self).__init__(**kwargs)
+        super(TraceDetector, self).__init__(**kwargs)
         self.input_resize = layers.Resizing(28, 28)
         self.conv1 = layers.Conv2D(64, (3, 3), activation="relu")
         self.pool1 = layers.MaxPooling2D((2, 2))
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    trace_classifier = trace_detector()
+    trace_classifier = TraceDetector()
     trace_classifier.build(input_shape=(None, 28, 28, 1))
     trace_classifier.summary()
 

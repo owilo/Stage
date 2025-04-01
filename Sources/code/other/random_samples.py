@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from keras.datasets import mnist
 from sklearn.mixture import GaussianMixture
 
-from code.models import betaVAE
+from code.models import BetaVAE
 from code.utils import cache, latent, utils
 
 np.random.seed(42)

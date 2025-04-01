@@ -19,7 +19,7 @@ tf.keras.utils.set_random_seed(42)
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae128.keras")
-classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
+Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
 """model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
 
@@ -39,13 +39,13 @@ image = image.astype("float32") / 255.
 image = np.expand_dims(image, axis=-1)
 x_ori = np.expand_dims(image, axis=0)
 
-y_ori, _, crt_ori = utils.classify(x_ori, classifier)
+y_ori, _, crt_ori = utils.classify(x_ori, Classifier)
 
 _, _, z_ori = autoencoder.encoder.predict(x_ori)
 
 x_src = latent.decode(autoencoder, z_ori, tf.keras.utils.to_categorical(y_ori, num_classes=10))
 
-guessed_src, _, crt_src = utils.classify(x_src, classifier)
+guessed_src, _, crt_src = utils.classify(x_src, Classifier)
 
 _, _, z_src = autoencoder.encoder.predict(x_src)
 
@@ -68,7 +68,7 @@ else: # Beta-VAE
 
 x_dst = autoencoder.decoder.predict(z_dst)
 
-guessed_dst, _, crt_dst = utils.classify(x_dst, classifier)
+guessed_dst, _, crt_dst = utils.classify(x_dst, Classifier)
 
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
 
@@ -79,7 +79,7 @@ else: # Beta-VAE
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
-guessed_invsrc, _, crt_invsrc = utils.classify(x_invsrc, classifier)
+guessed_invsrc, _, crt_invsrc = utils.classify(x_invsrc, Classifier)
 
 fig, axes = plt.subplots(2, 13, figsize=(20, 5))
 axes[0, 0].imshow(cv2.cvtColor(image64, cv2.COLOR_BGR2RGB))

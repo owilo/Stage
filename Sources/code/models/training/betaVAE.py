@@ -98,9 +98,9 @@ class Decoder(tf.keras.Model):
         return False
 
 @tf.keras.utils.register_keras_serializable()
-class betaVAE(tf.keras.Model):
+class BetaVAE(tf.keras.Model):
     def __init__(self, latent_dim=128, beta=6.0, **kwargs):
-        super(betaVAE, self).__init__(**kwargs)
+        super(BetaVAE, self).__init__(**kwargs)
         self.latent_dim = latent_dim
         self.beta = beta
         self.encoder = Encoder(latent_dim=latent_dim)
@@ -169,9 +169,9 @@ class betaVAE(tf.keras.Model):
         })
         return config
     
-betaVAE.Encoder = Encoder
-betaVAE.Decoder = Decoder
-betaVAE.Sampling = Sampling
+BetaVAE.Encoder = Encoder
+BetaVAE.Decoder = Decoder
+BetaVAE.Sampling = Sampling
 
 if __name__ == "__main__":
     np.random.seed(42)
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     print(f">> l : {args.l}, β : {args.beta}, e : {num_epochs}, b : {batch_size}")
 
-    vae = betaVAE(latent_dim=latent_dim, beta=beta)
+    vae = BetaVAE(latent_dim=latent_dim, beta=beta)
     vae.compile(optimizer=keras.optimizers.Adam())
 
     if (dataset_size < 1.0):
