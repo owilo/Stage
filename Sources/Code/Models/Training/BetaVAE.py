@@ -1,13 +1,11 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import math
 import numpy as np
-import sys
 import argparse
 
 from Code.Models.Common.layers import Sampling
-from Code.Utils import cache, utils
+from Code.Utils import utils, models
 
 @tf.keras.utils.register_keras_serializable()
 class Encoder(tf.keras.Model):
@@ -189,15 +187,15 @@ if __name__ == "__main__":
     parser.add_argument("-l", type=int, default=128, help="Taille du vecteur latent")
     parser.add_argument("-e", type=int, default=5, help="Nombre d'époques")
     parser.add_argument("-b", type=int, default=32, help="Taille de batch")
-    parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test.")
-    parser.add_argument("--beta", type=float, default=6.0, help="Beta")
+    parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test")
+    parser.add_argument("--beta", type=float, default=6.0, help="Coefficient β de pondération pour la régularisation")
 
     args = parser.parse_args()
 
     latent_dim = args.l
     num_epochs = args.e
     batch_size = args.b
-    dataset_size = args.ds
+    dataset_size = max(0.0, min(args.ds), 1.0)
     beta = args.beta
 
     print(f">> l : {args.l}, β : {args.beta}, e : {num_epochs}, b : {batch_size}")
@@ -206,10 +204,9 @@ if __name__ == "__main__":
     vae.compile(optimizer=keras.optimizers.Adam())
 
     if (dataset_size < 1.0):
-        p = max(0.0, min(dataset_size), 1.0)
-        print(f">> Taille du dataset d'entraînement : {p}")
+        print(f">> Taille du dataset d'entraînement : {dataset_size}")
 
-        x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, p)
+        x_train_left, _, _, _ = utils.split_dataset(x_train, y_train, dataset_size)
         vae.fit(
             x_train_left,
             epochs=num_epochs,
@@ -230,10 +227,17 @@ if __name__ == "__main__":
     dummy_x = np.random.rand(1, 64, 64, 1).astype("float32")
     _ = vae(dummy_x)
 
-    MODEL_PATH = cache.MODEL_FOLDER / "BetaVAE"
-    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    filename = f"betavae-{latent_dim}.keras" if dataset_size == 1 else f"h-betavae-{latent_dim}.keras"
 
-    if (len(sys.argv) > 1):
-        vae.save(MODEL_PATH / f"h-betavae-{latent_dim}.keras")
-    else:
-        vae.save(MODEL_PATH / f"betavae-{latent_dim}.keras")
+    model_definition = {
+        "type": "autoencoder",
+        "category": "BetaVAE",
+        "file": filename,
+        "input_shape": [64, 64, 1],
+        "output_shape": [64, 64, 1],
+        "latent_shape": [latent_dim],
+        "labels": False,
+        "dataset_range": [0, dataset_size]
+    }
+
+    models.save_model(vae, model_definition)

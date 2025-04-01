@@ -2,8 +2,9 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
+import argparse
 
-from Code.Utils import cache, utils
+from Code.Utils import utils, models
 
 @tf.keras.utils.register_keras_serializable()
 class Classifier(keras.Model):
@@ -38,20 +39,39 @@ if __name__ == "__main__":
     y_train = keras.utils.to_categorical(y_train, 10)
     y_test = keras.utils.to_categorical(y_test, 10)
 
+    parser = argparse.ArgumentParser(description="Entraînement du Classifieur")
+    parser.add_argument("-e", type=int, default=50, help="Nombre d'époques")
+    parser.add_argument("-b", type=int, default=128, help="Taille de batch")
+    args = parser.parse_args()
+
+    num_epochs = args.e
+    batch_size = args.b
+
     classifier = Classifier()
     classifier.build(input_shape=(None, 28, 28, 1))
     classifier.summary()
 
     classifier.compile(
-        loss="categorical_crossentropy", 
-        optimizer=keras.optimizers.Adam(), 
+        loss="categorical_crossentropy",
+        optimizer=keras.optimizers.Adam(),
         metrics=["accuracy"]
     )
 
-    batch_size = 128
-    num_epochs = 50
-    classifier.fit(x_train, y_train, batch_size=batch_size, epochs=num_epochs, validation_data=(x_test, y_test))
+    classifier.fit(
+        x_train,
+        y_train,
+        batch_size=batch_size,
+        epochs=num_epochs,
+        validation_data=(x_test, y_test)
+    )
 
-    MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
-    MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    classifier.save(MODEL_PATH / "classifier.keras")
+    model_definition = {
+        "type": "classifier",
+        "category": "Classifier",
+        "file": "classifier.keras",
+        "input_shape": [28, 28, 1],
+        "output_shape": [10,],
+        "dataset_range": [0, 1]
+    }
+
+    models.save_model(classifier, model_definition)

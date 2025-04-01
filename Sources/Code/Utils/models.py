@@ -1,24 +1,23 @@
 import json
 import tensorflow as tf
-import os
 
 from Code.Models import *
 from Code.Utils import cache
 
 import json
 
-"""test = {
-    "type": "VAE",
-    "category": "testVAE",
-    "file": "testvae.keras",
-    "input_shape": [32, 32, 1],
-    "output_shape": [32, 32, 1],
-    "latent_shape": [32],
-    "labels": False,
-    "dataset_range": [0, 1]
-}"""
+def default_formatter(model, criteria):
+    display_fields = [k for k in criteria if k != "type"]
+    parts = [f"category : {model.get('category', 'N/A')}"]
+    for key in display_fields:
+        if key == "category":
+            continue
+        val = tuple(model[key]) if isinstance(model.get(key), list) else model.get(key)
+        parts.append(f"{key} : {val}")
+    return "-".join(parts)
 
-AE_FORMATTER = lambda model: f"{model['category']} - {tuple(model['input_shape'])} → {tuple(model['latent_shape'])} → {tuple(model['output_shape'])} | Dataset : {(100.0 * (model['dataset_range'][1] - model['dataset_range'][0])):.2f}%"
+def ae_formatter(model, criteria):
+    return f"{model['category']} | {tuple(model['input_shape'])} → {tuple(model['latent_shape'])} → {tuple(model['output_shape'])} | Dataset : {(100.0 * (model['dataset_range'][1] - model['dataset_range'][0])):.2f}%"
 
 def cleanup_models(models_file="models.json"):
     models_path = cache.MODEL_FOLDER / models_file
@@ -46,7 +45,7 @@ def cleanup_models(models_file="models.json"):
 
     return removed_entries
 
-def save_model(new_model, models_file="models.json"):
+def save_model(model, model_definition, models_file="models.json"):
     cleanup_models(models_file)
     try:
         with open(cache.MODEL_FOLDER / models_file, "r") as f:
@@ -54,12 +53,16 @@ def save_model(new_model, models_file="models.json"):
     except FileNotFoundError:
         models = []
 
-    models.append(new_model)
+    models.append(model_definition)
 
     with open(models_file, "w") as f:
         json.dump(models, f, indent=4)
 
-def list_models(criteria={}, formatter=None, models_file="models.json"):
+    model_path = cache.MODEL_FOLDER / model_definition["category"]
+    model_path.mkdir(parents=True, exist_ok=True)
+    model.save(model_path / model_definition["file"])
+
+def list_models(criteria={}, formatter=default_formatter, header="Liste des modèles :", models_file="models.json"):
     cleanup_models(models_file)
     with open(cache.MODEL_FOLDER / models_file, "r") as f:
         models = json.load(f)
@@ -79,27 +82,27 @@ def list_models(criteria={}, formatter=None, models_file="models.json"):
 
     matching_models = [model for model in models if matches(model)]
     
-    if formatter is None:
-        def default_formatter(model):
-            display_fields = [k for k in criteria if k != "type"]
-            parts = [f"category : {model.get('category', 'N/A')}"]
-            for key in display_fields:
-                if key == "category":
-                    continue
-                val = tuple(model[key]) if isinstance(model.get(key), list) else model.get(key)
-                parts.append(f"{key} : {val}")
-            return "-".join(parts)
-        formatter = default_formatter
-    
-    for idx, model in enumerate(matching_models):
-        print(f"{idx}. {formatter(model)}")
+    if not header is None:
+        print(header)
+    if not formatter is None:
+        for idx, model in enumerate(matching_models):
+            print(f"{idx}. {formatter(model, criteria)}")
     
     return matching_models
 
 def select_model(models):
-    model = int(input("Sélectionner un modèle : "))
+    if len(models) == 0:
+        print("Aucun modèle trouvé - abort")
+        exit(1)
+
+    if len(models) == 1:
+        print("(Modèle sélectionné par défaut)")
+        model = 0
+    else:
+        model = int(input("Sélectionner un modèle : "))
+
     if model < 0 and model > len(models):
         print("Modèle invalide - abort")
         exit(1)
 
-    return tf.keras.models.load_model(cache.MODEL_FOLDER / models[model]["category"] / models[model]["file"])   
+    return tf.keras.models.load_model(cache.MODEL_FOLDER / models[model]["category"] / models[model]["file"]), models[model]

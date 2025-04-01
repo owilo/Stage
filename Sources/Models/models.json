@@ -1,6 +1,6 @@
 [
     {
-        "type": "VAE",
+        "type": "autoencoder",
         "category": "BetaVAE",
         "file": "betavae128.keras",
         "input_shape": [
@@ -23,7 +23,7 @@
         ]
     },
     {
-        "type": "VAE",
+        "type": "autoencoder",
         "category": "BetaVAE",
         "file": "betavae16.keras",
         "input_shape": [
@@ -46,7 +46,30 @@
         ]
     },
     {
-        "type": "VAE",
+        "type": "autoencoder",
+        "category": "BetaVAE",
+        "file": "h-betavae128.keras",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            64,
+            64,
+            1
+        ],
+        "latent_shape": [
+            128
+        ],
+        "labels": false,
+        "dataset_range": [
+            0,
+            0.5
+        ]
+    },
+    {
+        "type": "autoencoder",
         "category": "BetaVAE",
         "file": "h-betavae16.keras",
         "input_shape": [
@@ -69,7 +92,30 @@
         ]
     },
     {
-        "type": "VAE",
+        "type": "autoencoder",
+        "category": "CVAE",
+        "file": "cvae128.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            28,
+            28,
+            1
+        ],
+        "latent_shape": [
+            128
+        ],
+        "labels": true,
+        "dataset_range": [
+            0,
+            1
+        ]
+    },
+    {
+        "type": "autoencoder",
         "category": "CVAE",
         "file": "cvae16.keras",
         "input_shape": [
@@ -92,7 +138,53 @@
         ]
     },
     {
-        "type": "Classifier",
+        "type": "autoencoder",
+        "category": "CVAE",
+        "file": "h-cvae128.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            28,
+            28,
+            1
+        ],
+        "latent_shape": [
+            128
+        ],
+        "labels": true,
+        "dataset_range": [
+            0,
+            0.5
+        ]
+    },
+    {
+        "type": "autoencoder",
+        "category": "CVAE",
+        "file": "h-cvae16.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            28,
+            28,
+            1
+        ],
+        "latent_shape": [
+            16
+        ],
+        "labels": true,
+        "dataset_range": [
+            0,
+            0.5
+        ]
+    },
+    {
+        "type": "classifier",
         "category": "Classifier",
         "file": "classifier.keras",
         "input_shape": [
@@ -107,5 +199,77 @@
             0,
             1
         ]
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "file": "trace-classifier-betavae.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "file": "trace-classifier-cvae.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0,
+            1
+        ],
+        "autoencoder": "CVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "file": "trace-detector-betavae.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "file": "trace-detector-cvae.keras",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0,
+            1
+        ],
+        "autoencoder": "CVAE"
     }
 ]

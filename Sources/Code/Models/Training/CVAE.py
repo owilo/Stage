@@ -1,12 +1,11 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import math
 import numpy as np
-import sys
+import argparse
 
 from Code.Models.Common.layers import Sampling
-from Code.Utils import cache, utils
+from Code.Utils import utils, models
 
 @tf.keras.utils.register_keras_serializable()
 class Encoder(tf.keras.Model):
@@ -169,40 +168,52 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    num_classes = 10
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+    x_train = tf.image.resize(x_train, (64, 64))
+    x_test = tf.image.resize(x_test, (64, 64))
 
-    latent_dim = 128
-    num_epochs = 30
-    batch_size = 32
+    parser = argparse.ArgumentParser(description="BetaVAE")
+    parser.add_argument("-l", type=int, default=128, help="Taille du vecteur latent")
+    parser.add_argument("-e", type=int, default=5, help="Nombre d'époques")
+    parser.add_argument("-b", type=int, default=32, help="Taille de batch")
+    parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test")
+    parser.add_argument("--beta", type=float, default=3.5, help="Coefficient β de pondération pour la régularisation")
+    parser.add_argument("--ans", type=int, default=27500, help="Nombre d'étapes du recuit linéaire")
 
-    cvae = CVAE(latent_dim=latent_dim, final_beta=3.5, annealing_steps=27500)
+    args = parser.parse_args()
+
+    latent_dim = args.l
+    num_epochs = args.e
+    batch_size = args.b
+    dataset_size = max(0.0, min(args.ds), 1.0)
+    beta = args.beta
+    annealing_steps = args.ans
+
+    print(f">> l : {args.l}, β : {args.beta}, ans: {annealing_steps}, e : {num_epochs}, b : {batch_size}")
+
+    cvae = CVAE(latent_dim=latent_dim, final_beta=beta, annealing_steps=annealing_steps)
     cvae.compile(optimizer=keras.optimizers.Adam())
 
-    if (len(sys.argv) > 1):
-        p = max(0.0, min(float(sys.argv[1]), 1.0))
-        print(f">> Taille du dataset d'entraînement : {p}")
+    if (dataset_size < 1.0):
+        print(f">> Taille du dataset d'entraînement : {dataset_size}")
 
-        x_train_left, y_train_left, _, _ = utils.split_dataset(x_train, y_train, p)
+        x_train_left, y_train_left, _, _ = utils.split_dataset(x_train, y_train, dataset_size)
 
         cvae.fit(
             x_train_left,
             y_train_left,
-            epochs=math.ceil(num_epochs / p),
+            epochs=num_epochs,
             batch_size=batch_size,
             validation_split=0.1,
             validation_batch_size=batch_size
         )
     else:
         print(">> Entraînement classique")
-
         cvae.fit(
             x_train,
             y_train,
             epochs=num_epochs,
             batch_size=batch_size,
-            validation_data=(x_test, y_test),
+            validation_data=x_test,
             validation_batch_size=batch_size
         )
 
@@ -210,10 +221,17 @@ if __name__ == "__main__":
     dummy_y = np.zeros((1, 10)).astype("float32")
     _ = cvae((dummy_x, dummy_y))
 
-    MODEL_PATH = cache.MODEL_FOLDER / "CVAE"
-    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    filename = f"cvae-{latent_dim}.keras" if dataset_size == 1 else f"h-cvae-{latent_dim}.keras"
 
-    if (len(sys.argv) > 1):
-        cvae.save(MODEL_PATH / f"h-cvae{latent_dim}.keras")
-    else:
-        cvae.save(MODEL_PATH / f"cvae{latent_dim}.keras")
+    model_definition = {
+        "type": "autoencoder",
+        "category": "CVAE",
+        "file": filename,
+        "input_shape": [28, 28, 1],
+        "output_shape": [28, 28, 1],
+        "latent_shape": [latent_dim],
+        "labels": True,
+        "dataset_range": [0, dataset_size]
+    }
+
+    models.save_model(cvae, model_definition)
