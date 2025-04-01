@@ -2,22 +2,9 @@ import json
 import tensorflow as tf
 
 from code.models import *
-from code.utils import cache
+from code.utils import cache, formatters
 
 import json
-
-def default_formatter(model, criteria):
-    display_fields = [k for k in criteria if k != "type"]
-    parts = [f"category : {model.get('category', 'N/A')}"]
-    for key in display_fields:
-        if key == "category":
-            continue
-        val = tuple(model[key]) if isinstance(model.get(key), list) else model.get(key)
-        parts.append(f"{key} : {val}")
-    return "-".join(parts)
-
-def ae_formatter(model, criteria):
-    return f"{model['category']} | {tuple(model['input_shape'])} → {tuple(model['latent_shape'])} → {tuple(model['output_shape'])} | Dataset : {(100.0 * (model['dataset_range'][1] - model['dataset_range'][0])):.2f}%"
 
 def cleanup_models(models_file="models.json"):
     models_path = cache.MODEL_FOLDER / models_file
@@ -62,7 +49,7 @@ def save_model(model, model_definition, models_file="models.json"):
     model_path.mkdir(parents=True, exist_ok=True)
     model.save(model_path / model_definition["file"])
 
-def list_models(criteria={}, formatter=default_formatter, header="Liste des modèles :", models_file="models.json"):
+def list_models(criteria={}, formatter=formatters.automatic, header="Liste des modèles :", models_file="models.json"):
     cleanup_models(models_file)
     with open(cache.MODEL_FOLDER / models_file, "r") as f:
         models = json.load(f)
