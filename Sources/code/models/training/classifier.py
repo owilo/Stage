@@ -42,10 +42,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entraînement du Classifieur")
     parser.add_argument("-e", type=int, default=50, help="Nombre d'époques")
     parser.add_argument("-b", type=int, default=128, help="Taille de batch")
+    parser.add_argument("--name", type=str, default="classifier", help="Nom du modèle")
     args = parser.parse_args()
 
     num_epochs = args.e
     batch_size = args.b
+    name = args.name
 
     classifier = Classifier()
     classifier.build(input_shape=(None, 28, 28, 1))
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     model_definition = {
         "type": "classifier",
         "category": "Classifier",
-        "file": "classifier.keras",
+        "name": name,
         "input_shape": [28, 28, 1],
         "output_shape": [10,],
         "dataset_range": [0, 1]

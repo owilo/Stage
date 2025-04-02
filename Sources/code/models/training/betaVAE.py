@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", type=int, default=32, help="Taille de batch")
     parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test")
     parser.add_argument("--beta", type=float, default=6.0, help="Coefficient β de pondération pour la régularisation")
-
+    parser.add_argument("--name", type=str, default="betavae", help="Nom du modèle")
     args = parser.parse_args()
 
     latent_dim = args.l
@@ -197,6 +197,7 @@ if __name__ == "__main__":
     batch_size = args.b
     dataset_size = max(0.0, min(args.ds), 1.0)
     beta = args.beta
+    name = args.name
 
     print(f">> l : {args.l}, β : {args.beta}, e : {num_epochs}, b : {batch_size}")
 
@@ -227,12 +228,10 @@ if __name__ == "__main__":
     dummy_x = np.random.rand(1, 64, 64, 1).astype("float32")
     _ = vae(dummy_x)
 
-    filename = f"betavae-{latent_dim}.keras" if dataset_size == 1 else f"h-betavae-{latent_dim}.keras"
-
     model_definition = {
         "type": "autoencoder",
         "category": "BetaVAE",
-        "file": filename,
+        "name": name,
         "input_shape": [64, 64, 1],
         "output_shape": [64, 64, 1],
         "latent_shape": [latent_dim],

@@ -50,9 +50,6 @@ _, _, x_train_rr, y_train_rr = utils.split_dataset(x_train_r, y_train_r, 0.75) #
 
 x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rr, y_train_rr)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
-Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
-
 autoencoder, autoencoder_definition = models.select_model(models.list_models(
     criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
 ))
@@ -189,7 +186,7 @@ compute_confusion_matrix(
 )
 
 # Classification de la translation inverse
-guessed, _, certainties = utils.classify(x_invsrc, Classifier)
+guessed, _, certainties = utils.classify(x_invsrc, classifier)
 cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,

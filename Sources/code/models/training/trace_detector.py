@@ -41,16 +41,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entraînement du Détecteur de traces")
     parser.add_argument("-e", type=int, default=50, help="Nombre d'époques")
     parser.add_argument("-b", type=int, default=16, help="Taille de batch")
-    parser.add_argument("--name", type=str, default="trace-detector.keras", help="Nom du modèle")
+    parser.add_argument("--name", type=str, default="trace-detector", help="Nom du modèle")
+    parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
     args = parser.parse_args()
 
     num_epochs = args.e
     batch_size = args.b
-    filename = args.name if args.name.endswith(".keras") else args.name + ".keras"
+    name = args.name
+    default_autoencoder = args.autoencoder
 
     autoencoder, autoencoder_definition = models.select_model(models.list_models(
         criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
-    ))
+    ), default_autoencoder)
 
     input_shape = tuple(autoencoder_definition["input_shape"])
     x_train = utils.resize(x_train, input_shape)
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     model_definition = {
         "type": "trace_detector",
         "category": "Classifier",
-        "file": filename,
+        "name": name,
         "input_shape": list(input_shape),
         "output_shape": [2,],
         "dataset_range": [0.5, 1],

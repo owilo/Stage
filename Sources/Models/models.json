@@ -2,7 +2,7 @@
     {
         "type": "autoencoder",
         "category": "BetaVAE",
-        "file": "betavae128.keras",
+        "name": "betavae128",
         "input_shape": [
             64,
             64,
@@ -25,7 +25,7 @@
     {
         "type": "autoencoder",
         "category": "BetaVAE",
-        "file": "betavae16.keras",
+        "name": "betavae16",
         "input_shape": [
             64,
             64,
@@ -48,7 +48,7 @@
     {
         "type": "autoencoder",
         "category": "BetaVAE",
-        "file": "h-betavae128.keras",
+        "name": "h-betavae128",
         "input_shape": [
             64,
             64,
@@ -71,7 +71,7 @@
     {
         "type": "autoencoder",
         "category": "BetaVAE",
-        "file": "h-betavae16.keras",
+        "name": "h-betavae16",
         "input_shape": [
             64,
             64,
@@ -94,7 +94,7 @@
     {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": "cvae128.keras",
+        "name": "cvae128",
         "input_shape": [
             28,
             28,
@@ -117,7 +117,7 @@
     {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": "cvae16.keras",
+        "name": "cvae16",
         "input_shape": [
             28,
             28,
@@ -140,7 +140,7 @@
     {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": "h-cvae128.keras",
+        "name": "h-cvae128",
         "input_shape": [
             28,
             28,
@@ -163,7 +163,7 @@
     {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": "h-cvae16.keras",
+        "name": "h-cvae16",
         "input_shape": [
             28,
             28,
@@ -186,7 +186,7 @@
     {
         "type": "classifier",
         "category": "Classifier",
-        "file": "classifier.keras",
+        "name": "classifier",
         "input_shape": [
             28,
             28,
@@ -203,7 +203,7 @@
     {
         "type": "trace_classifier",
         "category": "Classifier",
-        "file": "trace-classifier-betavae.keras",
+        "name": "trace-classifier-betavae",
         "input_shape": [
             28,
             28,
@@ -221,7 +221,7 @@
     {
         "type": "trace_classifier",
         "category": "Classifier",
-        "file": "trace-classifier-cvae.keras",
+        "name": "trace-classifier-cvae",
         "input_shape": [
             28,
             28,
@@ -239,7 +239,7 @@
     {
         "type": "trace_detector",
         "category": "Classifier",
-        "file": "trace-detector-betavae.keras",
+        "name": "trace-detector-betavae",
         "input_shape": [
             28,
             28,
@@ -257,7 +257,7 @@
     {
         "type": "trace_detector",
         "category": "Classifier",
-        "file": "trace-detector-cvae.keras",
+        "name": "trace-detector-cvae",
         "input_shape": [
             28,
             28,
@@ -275,7 +275,7 @@
     {
         "type": "trace_classifier",
         "category": "Classifier",
-        "file": "trace-classifier-betavae128.keras",
+        "name": "trace-classifier-betavae128",
         "input_shape": [
             64,
             64,
@@ -293,7 +293,7 @@
     {
         "type": "trace_detector",
         "category": "Classifier",
-        "file": "trace-detector-betavae128.keras",
+        "name": "trace-detector-betavae128",
         "input_shape": [
             64,
             64,

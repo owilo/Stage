@@ -1,10 +1,9 @@
-import json
 import tensorflow as tf
+import json
+from collections import OrderedDict
 
 from code.models import *
 from code.utils import cache, formatters
-
-import json
 
 def cleanup_models(models_file="models.json"):
     models_path = cache.MODEL_FOLDER / models_file
@@ -16,20 +15,25 @@ def cleanup_models(models_file="models.json"):
         return []
 
     removed_entries = []
-    updated_models = []
+    latest_models = OrderedDict()
+    
     for model in models:
-        model_file = cache.MODEL_FOLDER / model.get("category", "") / model.get("file", "")
+        model_file = cache.MODEL_FOLDER / model.get("category", "") / (model.get("name", "") + ".keras")
         if model_file.exists():
-            updated_models.append(model)
+            latest_models[(model.get("name", "") + ".keras")] = model
         else:
             removed_entries.append(model)
-
+    
+    updated_models = list(latest_models.values())
+    
     with open(models_path, "w") as f:
         json.dump(updated_models, f, indent=4)
-
+    
     if removed_entries:
         print(f"{len(removed_entries)} modèle(s) supprimé(s), car le(s) fichier(s) renseigné(s) n'existe(nt) pas.")
-
+    if len(models) > len(updated_models):
+        print(f"{len(models) - len(updated_models)} modèle(s) en double supprimé(s).")
+    
     return removed_entries
 
 def save_model(model, model_definition, models_file="models.json"):
@@ -47,7 +51,7 @@ def save_model(model, model_definition, models_file="models.json"):
 
     model_path = cache.MODEL_FOLDER / model_definition["category"]
     model_path.mkdir(parents=True, exist_ok=True)
-    model.save(model_path / model_definition["file"])
+    model.save(model_path / (model_definition["name"] + ".keras"))
 
 def list_models(criteria={}, formatter=formatters.automatic, header="Liste des modèles :", models_file="models.json"):
     cleanup_models(models_file)
@@ -77,8 +81,8 @@ def list_models(criteria={}, formatter=formatters.automatic, header="Liste des m
     
     return matching_models
 
-def select_model(models):
-    if len(models) == 0:
+def select_model(models, auto_choice=None):
+    if not models:
         print("Aucun modèle trouvé - abort")
         exit(1)
 
@@ -86,10 +90,22 @@ def select_model(models):
         print("(Modèle sélectionné par défaut)")
         model = 0
     else:
-        model = int(input("Sélectionner un modèle : "))
+        if auto_choice is None:
+            user_input = input("Sélectionner un modèle (index ou nom) : ")
+            try:
+                model = int(user_input)
+            except ValueError:
+                model_name = user_input.strip()
+                model = next((i for i, m in enumerate(models) if m["name"] == model_name), -1)
+        elif isinstance(auto_choice, int):
+            model = auto_choice
+        elif isinstance(auto_choice, str):
+            model = next((i for i, m in enumerate(models) if m["name"] == auto_choice.strip()), -1)
+        else:
+            model = -1
 
-    if model < 0 and model > len(models):
+    if model < 0 or model >= len(models):
         print("Modèle invalide - abort")
         exit(1)
 
-    return tf.keras.models.load_model(cache.MODEL_FOLDER / models[model]["category"] / models[model]["file"]), models[model]
+    return tf.keras.models.load_model(cache.MODEL_FOLDER / models[model]["category"] / (models[model]["name"] + ".keras")), models[model]

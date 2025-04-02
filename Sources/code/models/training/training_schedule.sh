@@ -1,0 +1,2 @@
+python -m code.models.training.trace_confusion --name trace-classifier-betavae16 --autoencoder h-betavae16
+python -m code.models.training.trace_detector --name trace-detector-betavae16 --autoencoder h-betavae16

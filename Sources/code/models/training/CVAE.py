@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test")
     parser.add_argument("--beta", type=float, default=3.5, help="Coefficient β de pondération pour la régularisation")
     parser.add_argument("--ans", type=int, default=27500, help="Nombre d'étapes du recuit linéaire")
-
+    parser.add_argument("--name", type=str, default="cvae", help="Nom du modèle")
     args = parser.parse_args()
 
     latent_dim = args.l
@@ -187,6 +187,7 @@ if __name__ == "__main__":
     dataset_size = max(0.0, min(args.ds), 1.0)
     beta = args.beta
     annealing_steps = args.ans
+    name = args.name
 
     print(f">> l : {args.l}, β : {args.beta}, ans: {annealing_steps}, e : {num_epochs}, b : {batch_size}")
 
@@ -221,12 +222,10 @@ if __name__ == "__main__":
     dummy_y = np.zeros((1, 10)).astype("float32")
     _ = cvae((dummy_x, dummy_y))
 
-    filename = f"cvae-{latent_dim}.keras" if dataset_size == 1 else f"h-cvae-{latent_dim}.keras"
-
     model_definition = {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": filename,
+        "file": name,
         "input_shape": [28, 28, 1],
         "output_shape": [28, 28, 1],
         "latent_shape": [latent_dim],
