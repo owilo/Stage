@@ -4,6 +4,7 @@ import os
 import sys
 import pickle
 from pathlib import Path
+import numpy as np
 
 dotenv.load_dotenv()
 
@@ -15,11 +16,6 @@ CACHE_FOLDER = get_env_folder("CACHE_PATH")
 MODEL_FOLDER = get_env_folder("MODEL_PATH")
 RESULTS_FOLDER = get_env_folder("RESULTS_PATH")
 IMAGES_FOLDER = get_env_folder("IMAGES_PATH")
-
-import os
-import pickle
-import xxhash
-import numpy as np
 
 def load_from_cache(data_id, supplier, save_cache=True, verbose=False):
     hash_str = xxhash.xxh128_hexdigest(data_id)

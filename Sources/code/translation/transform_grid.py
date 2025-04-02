@@ -56,8 +56,14 @@ y_dst = np.tile(np.arange(10), 10)  # [0, 1, ..., 9, 0, 1, ..., 9]
 
 z_src = np.repeat(z_test, 10, axis=0)
 
-mappings = latent.compute_mappings_ot(z_train, y_train)
-z_dst = latent.transform_ot(z_src, y_src, y_dst, mappings)
+"""mappings = latent.compute_mappings_ot(
+    z_classes=z_train,
+    y_classes=y_train,
+    save_cache=True
+)
+z_dst = latent.transform_ot(z_src, y_src, y_dst, mappings)"""
+
+z_dst = latent.transform(z_src, y_src, y_dst, z_train, y_train)
 
 x_decoded = autoencoder.decoder.predict(z_dst)
 x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
