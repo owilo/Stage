@@ -119,7 +119,7 @@ def style_class_transform(z, y, num_classes=None):
 
 def transform_mt(z_src, y_src, y_dst, z_train, y_train):
     """
-    Transformation d'une distribution normale multidimensionnelle en une autre
+    Transformation d'une distribution normale multidimensionnelle en une autre (VAE)
     """
     z_src = np.asarray(z_src)
     n = z_src.shape[0]
@@ -159,9 +159,15 @@ def transform_mt(z_src, y_src, y_dst, z_train, y_train):
     return z_dst
 
 def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.3, save_cache=True, verbose=None):
-    # c'est TRÈS long, mieux vaut laisser le cache !
-    # sinon augmenter reg ou réduire le nombre d'itérations/subsample_ratio
-    # si reg augmente beaucoup, ot.sinkhorn devrait suffire
+    """
+    Calcule le transport optimal de la distribution d'une classe vers toutes les autres.
+    """
+
+    """
+    C'est TRÈS long, mieux vaut laisser le cache !
+    Sinon augmenter reg ou réduire le nombre d'itérations/subsample_ratio
+    Si reg augmente beaucoup, ot.sinkhorn devrait suffire
+    """
 
     if verbose is None:
         verbose = save_cache
@@ -214,7 +220,7 @@ def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.3, save_cache=Tr
 
 def transform_ot(z, y_src, y_dst, mappings):
     """
-    Transformation d'une distribution quelconque en une autre
+    Transformation d'une distribution quelconque en une autre (AE ou VAE)
     """
     z_dst = np.copy(z)
     for (src_cls, dst_cls), mapping in mappings.items():

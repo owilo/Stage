@@ -42,7 +42,7 @@ def save_model(model, model_definition, models_file="models.json"):
 
     models.append(model_definition)
 
-    with open(models_file, "w") as f:
+    with open(cache.MODEL_FOLDER / models_file, "w") as f:
         json.dump(models, f, indent=4)
 
     model_path = cache.MODEL_FOLDER / model_definition["category"]

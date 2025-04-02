@@ -47,17 +47,17 @@ if __name__ == "__main__":
     num_epochs = args.e
     batch_size = args.b
 
-    Classifier = Classifier()
-    Classifier.build(input_shape=(None, 28, 28, 1))
-    Classifier.summary()
+    classifier = Classifier()
+    classifier.build(input_shape=(None, 28, 28, 1))
+    classifier.summary()
 
-    Classifier.compile(
+    classifier.compile(
         loss="categorical_crossentropy",
         optimizer=keras.optimizers.Adam(),
         metrics=["accuracy"]
     )
 
-    Classifier.fit(
+    classifier.fit(
         x_train,
         y_train,
         batch_size=batch_size,
@@ -74,4 +74,4 @@ if __name__ == "__main__":
         "dataset_range": [0, 1]
     }
 
-    models.save_model(Classifier, model_definition)
+    models.save_model(classifier, model_definition)

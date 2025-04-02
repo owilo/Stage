@@ -7,8 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 
-from code.models import *
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 def compute_confusion_matrix(cm, certainties, labels, filename, title_prefix=""):
     accuracy = np.trace(cm) / np.sum(cm)
@@ -54,10 +53,23 @@ x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rr, y_train_rr)
 autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "h-betavae128.keras")
 Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
 
-model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
+autoencoder, autoencoder_definition = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
+))
 
-TraceClassifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-classifier-{model_type}.keras")
-TraceDetector = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / f"trace-detector-{model_type}.keras")
+classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "classifier"}
+))
+
+trace_classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "trace_classifier", "autoencoder": autoencoder_definition["category"], "dataset_range": (0.5, 1)}
+))
+
+trace_detector, _ = models.select_model(models.list_models(
+    criteria={"type": "trace_detector", "autoencoder": autoencoder_definition["category"], "dataset_range": (0.5, 1)},
+))
+
+model_type = "cvae" if autoencoder_definition["labels"] else "betavae"
 
 z_src = latent.encode(
     autoencoder,
@@ -70,7 +82,7 @@ z_src = latent.encode(
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst)
 else: # Beta-VAE
-    z_class_distributions = latent.encode_class_distributions(
+    """z_class_distributions = latent.encode_class_distributions(
         autoencoder,
         x=x_train_l,
         y=y_train_l,
@@ -78,7 +90,17 @@ else: # Beta-VAE
         save_cache=True
     )
 
-    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
+    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)"""
+
+    z_train = latent.encode(
+        autoencoder,
+        x=x_train,
+        y=y_train,
+        n_times=2,
+        save_cache=True
+    )
+
+    z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train, y_train)
 
 x_dst = autoencoder.decoder.predict(z_dst)
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
@@ -86,7 +108,8 @@ _, _, z_invdst = autoencoder.encoder.predict(x_dst)
 if autoencoder.decoder.requires_labels():
     z_invsrc = latent.style_class_transform(z_invdst, y_src)
 else:
-    z_invsrc = latent.translate(z_invdst, y_dst, y_src, z_class_distributions)
+    z_invsrc = latent.transform_mt(z_invdst, y_dst, y_src, z_train, y_train)
+    """z_invsrc = latent.translate(z_invdst, , y_src, z_class_distributions)"""
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
@@ -96,7 +119,7 @@ FOLDER = cache.RESULTS_FOLDER / "TraceConfusion"
 FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Reconnaissance de la classe source sans translation
-guessed, _, certainties = utils.classify(x_src, TraceClassifier)
+guessed, _, certainties = utils.classify(x_src, trace_classifier)
 cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,
@@ -109,7 +132,7 @@ compute_confusion_matrix(
 ## Translation
 
 # Classification de la translation
-guessed, _, certainties = utils.classify(x_dst, Classifier)
+guessed, _, certainties = utils.classify(x_dst, classifier)
 cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,
@@ -120,7 +143,7 @@ compute_confusion_matrix(
 )
 
 # Reconnaissance de la classe source après translation
-guessed, _, certainties = utils.classify(x_dst, TraceClassifier)
+guessed, _, certainties = utils.classify(x_dst, trace_classifier)
 cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,
@@ -131,7 +154,7 @@ compute_confusion_matrix(
 )
 
 # Détection de la translation
-guessed, _, certainties = utils.classify(x_dst, TraceDetector)
+guessed, _, certainties = utils.classify(x_dst, trace_detector)
 cm = confusion_matrix(y_trans, guessed, labels=np.arange(2))
 compute_confusion_matrix(
     cm,
@@ -144,7 +167,7 @@ compute_confusion_matrix(
 ## Translation inverse
 
 # Reconnaissance de la classe de destination après translation inverse
-guessed, _, certainties = utils.classify(x_invsrc, TraceClassifier)
+guessed, _, certainties = utils.classify(x_invsrc, trace_classifier)
 cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,
@@ -155,7 +178,7 @@ compute_confusion_matrix(
 )
 
 # Reconnaissance de la classe source après translation inverse
-guessed, _, certainties = utils.classify(x_invsrc, TraceClassifier)
+guessed, _, certainties = utils.classify(x_invsrc, trace_classifier)
 cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
 compute_confusion_matrix(
     cm,
@@ -177,7 +200,7 @@ compute_confusion_matrix(
 )
 
 # Détection de la translation inverse
-guessed, _, certainties = utils.classify(x_invsrc, TraceDetector)
+guessed, _, certainties = utils.classify(x_invsrc, trace_detector)
 cm = confusion_matrix(y_trans, guessed, labels=np.arange(2))
 compute_confusion_matrix(
     cm,

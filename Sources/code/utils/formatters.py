@@ -6,7 +6,7 @@ def default(model, criteria):
             continue
         val = tuple(model[key]) if isinstance(model.get(key), list) else model.get(key)
         parts.append(f"{key} : {val}")
-    return "-".join(parts)
+    return " | ".join(parts)
 
 def autoencoder(model, criteria):
     return f"{model['category']} | {tuple(model['input_shape'])} → {tuple(model['latent_shape'])} → {tuple(model['output_shape'])} | Dataset : {(100.0 * (model['dataset_range'][1] - model['dataset_range'][0])):.2f}%"
@@ -17,5 +17,5 @@ def classifier(model, criteria):
 def automatic(model, criteria):
     return {
         "autoencoder": autoencoder,
-        "classifier": classifier
+        "classifier": classifier,
     }.get(model["type"], default)(model, criteria)

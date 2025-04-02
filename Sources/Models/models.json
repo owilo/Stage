@@ -246,7 +246,7 @@
             1
         ],
         "output_shape": [
-            10
+            2
         ],
         "dataset_range": [
             0,
@@ -264,12 +264,48 @@
             1
         ],
         "output_shape": [
-            10
+            2
         ],
         "dataset_range": [
             0,
             1
         ],
         "autoencoder": "CVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "file": "trace-classifier-betavae128.keras",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "file": "trace-detector-betavae128.keras",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            2
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
     }
 ]

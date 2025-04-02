@@ -2,10 +2,9 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
+import argparse
 
-#from Code.Training.BetaVAE import BetaVAE, Encoder, Decoder, Sampling # Important
-from code.models import CVAE # Important
-from code.utils import cache, latent, utils
+from code.utils import latent, utils, models
 
 @tf.keras.utils.register_keras_serializable()
 class TraceClassifier(keras.Model):
@@ -39,18 +38,33 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    TraceClassifier = TraceClassifier()
-    TraceClassifier.build(input_shape=(None, 28, 28, 1))
-    TraceClassifier.summary()
+    parser = argparse.ArgumentParser(description="Entraînement du Classifieur de traces")
+    parser.add_argument("-e", type=int, default=50, help="Nombre d'époques")
+    parser.add_argument("-b", type=int, default=16, help="Taille de batch")
+    parser.add_argument("--name", type=str, default="trace-classifier.keras", help="Nom du modèle")
+    args = parser.parse_args()
 
-    TraceClassifier.compile(
-        loss="categorical_crossentropy", 
-        optimizer=keras.optimizers.Adam(), 
+    num_epochs = args.e
+    batch_size = args.b
+    filename = args.name if args.name.endswith(".keras") else args.name + ".keras"
+
+    autoencoder, autoencoder_definition = models.select_model(models.list_models(
+        criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
+    ))
+
+    input_shape = tuple(autoencoder_definition["input_shape"])
+    x_train = utils.resize(x_train, input_shape)
+    x_test = utils.resize(x_test, input_shape)
+
+    trace_classifier = TraceClassifier()
+    trace_classifier.build(input_shape=input_shape)
+    trace_classifier.summary()
+
+    trace_classifier.compile(
+        loss="categorical_crossentropy",
+        optimizer=keras.optimizers.Adam(),
         metrics=["accuracy"]
     )
-
-    batch_size = 16
-    num_epochs = 50
 
     x_train_l, y_train_l, x_train_r, y_train_r = utils.split_dataset(x_train, y_train, 0.5) # Moitié gauche pour le VAE
 
@@ -61,8 +75,6 @@ if __name__ == "__main__":
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
 
-    autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "h-cvae128.keras")
-
     z_src = latent.encode(
         autoencoder,
         x=x_src,
@@ -71,24 +83,31 @@ if __name__ == "__main__":
         save_cache=True
     )
 
-    if autoencoder.decoder.requires_labels():
+    if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        z_class_distributions = latent.encode_class_distributions(
+        # z_class_distributions = latent.encode_class_distributions(
+        #     autoencoder,
+        #     x=x_train_l,
+        #     y=y_train_l,
+        #     n_times=2,
+        #     save_cache=True
+        # )
+        
+        #z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)       
+        z_train_l = latent.encode(
             autoencoder,
             x=x_train_l,
             y=y_train_l,
             n_times=2,
             save_cache=True
         )
-        
-        z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)       
+
+        z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 
     # Les non-translatés restent inchangés (aucun encodage-décodage)
-    x_dst = tf.image.resize(x_dst, (28, 28)).numpy()
-
     mask = (y_src == y_dst)
     x_dst[mask] = x_src[mask]
 
@@ -96,7 +115,7 @@ if __name__ == "__main__":
 
     y_src_categorical = keras.utils.to_categorical(y_src, 10)
 
-    TraceClassifier.fit(
+    trace_classifier.fit(
         x_dst,
         y_src_categorical,
         batch_size=batch_size,
@@ -104,8 +123,14 @@ if __name__ == "__main__":
         validation_split=0.1
     )
 
-    model_type = "cvae" if autoencoder.decoder.requires_labels() else "betavae"
+    model_definition = {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "file": filename,
+        "input_shape": list(input_shape),
+        "output_shape": [10,],
+        "dataset_range": [0.5, 1],
+        "autoencoder": autoencoder_definition["category"]
+    }
 
-    MODEL_PATH = cache.MODEL_FOLDER / "Classifier"
-    MODEL_PATH.mkdir(parents=True, exist_ok=True)
-    TraceClassifier.save(MODEL_PATH / f"trace-classifier-{model_type}.keras")
+    models.save_model(trace_classifier, model_definition)

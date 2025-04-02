@@ -105,4 +105,4 @@ def shuffle(*arrays, seed=0):
     return tuple(arr[indices] for arr in arrays)
 
 def resize(x, shape):
-    return tf.image.resize(x, shape).numpy()
+    return tf.image.resize(x, shape[:2]).numpy()
