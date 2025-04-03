@@ -6,8 +6,7 @@ from keras.datasets import mnist
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-from code.models import CVAE, Classifier
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -15,8 +14,13 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16.keras")
-Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "dataset_range": (0, 1)}
+))
+
+classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "classifier"}
+))
 
 z_test = latent.encode(autoencoder, x_test, y_test, 3, save_cache=False)
 
@@ -73,7 +77,7 @@ def process_class_translations(source_class, z_test, y_test, distributions, resu
     x_decoded = autoencoder.decoder.predict(z_dst, batch_size=128)
     x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
     
-    guessed_labels, _, certainties = utils.classify(x_decoded, Classifier)
+    guessed_labels, _, certainties = utils.classify(x_decoded, classifier)
     forward_cm = confusion_matrix(y_dst, guessed_labels, labels=np.arange(10))
     
     compute_confusion_matrix(
@@ -100,7 +104,7 @@ def process_inverse_translations(x_decoded_first, y_dst_labels, source_class, di
     
     x_decoded_final = autoencoder.decoder.predict(z_dst, batch_size=128)
     x_decoded_final = tf.image.resize(x_decoded_final, (28, 28)).numpy()
-    guessed_labels, _, certainties = utils.classify(x_decoded_final, Classifier)
+    guessed_labels, _, certainties = utils.classify(x_decoded_final, classifier)
     
     cm = confusion_matrix([source_class] * len(guessed_labels), guessed_labels, labels=np.arange(10))
     return cm, certainties

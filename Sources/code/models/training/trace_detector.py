@@ -88,24 +88,24 @@ if __name__ == "__main__":
     if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        # z_class_distributions = latent.encode_class_distributions(
-        #     autoencoder,
-        #     x=x_train_l,
-        #     y=y_train_l,
-        #     n_times=2,
-        #     save_cache=True
-        # )
-        
-        #z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)       
-        z_train_l = latent.encode(
+        z_class_distributions = latent.encode_class_distributions(
             autoencoder,
             x=x_train_l,
             y=y_train_l,
             n_times=2,
             save_cache=True
         )
+        
+        z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)       
+        # z_train_l = latent.encode(
+        #     autoencoder,
+        #     x=x_train_l,
+        #     y=y_train_l,
+        #     n_times=2,
+        #     save_cache=True
+        # )
 
-        z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)
+        # z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 

@@ -44,7 +44,6 @@ def split_src_to_dst(x, y):
     d = group_by_class(x, y)
 
     dst_classes = np.array(list(d.keys()), dtype=int)
-    m = len(dst_classes)
 
     x_src_list = []
     y_src_list = []
@@ -55,9 +54,7 @@ def split_src_to_dst(x, y):
         
         x_src_list.append(np.array(items))
         y_src_list.append(np.full(n, key))
-        
-        bin_indices = np.floor(np.linspace(0, m, n, endpoint=False)).astype(int)
-        y_dst_list.append(dst_classes[bin_indices])
+        y_dst_list.append(np.resize(dst_classes, n))
 
     x_src = np.concatenate(x_src_list)
     y_src = np.concatenate(y_src_list)

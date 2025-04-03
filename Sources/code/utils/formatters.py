@@ -1,7 +1,6 @@
 def default(model, criteria):
     display_fields = [k for k in criteria if k != "type"]
-    parts = [f"name : {model.get('name', 'N/A')}"]
-    parts = [f"category : {model.get('category', 'N/A')}"]
+    parts = [f"name : {model.get('name', 'N/A')}", f"category : {model.get('category', 'N/A')}"]
     for key in display_fields:
         if key == "name" or key == "category":
             continue

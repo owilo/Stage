@@ -5,6 +5,12 @@ import tensorflow as tf
 import ot
 from sklearn.preprocessing import StandardScaler
 
+def autoencoder_dependant_decode(autoencoder, zp, yp):
+    if autoencoder.decoder.requires_labels():
+        return autoencoder.decoder.predict((zp, yp))
+    else:
+        return autoencoder.decoder.predict(zp)
+
 def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, verbose=None):
     """
     Applique alternativement l'encodage et le décodage n_times fois pour obtenir le résultat final encodé.
@@ -22,7 +28,7 @@ def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, ve
             raise ValueError("n_times doit être supérieur ou égal à 1")
         mean, log_var, r = autoencoder.encoder.predict(x) # todo
         for _ in range(1, n_times):
-            r = decode(autoencoder, r, y)
+            r = autoencoder_dependant_decode(autoencoder, r, y)
             mean, log_var, r = autoencoder.encoder.predict(r)
         if return_dist:
             return mean, log_var, r
@@ -43,12 +49,6 @@ def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None):
 
     if autoencoder.decoder.requires_labels():
         y = tf.keras.utils.to_categorical(y)
-    
-    def autoencoder_dependant_decode(zp, yp):
-        if autoencoder.decoder.requires_labels():
-            return autoencoder.decoder.predict((zp, yp))
-        else:
-            return autoencoder.decoder.predict(zp)
 
     def _decode():
         if n_times < 1:
@@ -56,7 +56,7 @@ def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None):
         r = autoencoder_dependant_decode(z, y)
         for _ in range(1, n_times):
             _, _, r = autoencoder.encoder.predict(r) #todo
-            r = autoencoder_dependant_decode(r, y)
+            r = autoencoder_dependant_decode(autoencoder, r, y)
         return r
 
     return cache.load_from_cache(key, _decode, save_cache, verbose)
