@@ -30,6 +30,22 @@ class TraceClassifier(keras.Model):
         x = self.dense1(x)
         x = self.dropout(x)
         return self.dense2(x)
+    
+    def build(self, input_shape):
+        if len(input_shape) == 3:
+            dummy_input = tf.zeros((1, *input_shape))
+        else:
+            dummy_input = tf.zeros(input_shape)
+        _ = self.call(dummy_input)
+        super(TraceClassifier, self).build(input_shape)
+
+    def get_config(self):
+        config = super(TraceClassifier, self).get_config()
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 if __name__ == "__main__":
     np.random.seed(42)
@@ -55,8 +71,6 @@ if __name__ == "__main__":
     ), default_autoencoder)
 
     input_shape = tuple(autoencoder_definition["input_shape"])
-    x_train = utils.resize(x_train, input_shape)
-    x_test = utils.resize(x_test, input_shape)
 
     trace_classifier = TraceClassifier()
     trace_classifier.build(input_shape=input_shape)
@@ -75,6 +89,8 @@ if __name__ == "__main__":
 
     x_train_rl, y_train_rl, _, _ = utils.split_dataset(x_train_r, y_train_r, 0.75) # 25% de droite pour le test
 
+    x_train_rl = utils.resize(x_train_rl, input_shape)
+
     x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
 
     z_src = latent.encode(
@@ -88,7 +104,7 @@ if __name__ == "__main__":
     if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        z_class_distributions = latent.encode_class_distributions(
+        """z_class_distributions = latent.encode_class_distributions(
             autoencoder,
             x=x_train_l,
             y=y_train_l,
@@ -96,8 +112,8 @@ if __name__ == "__main__":
             save_cache=True
         )
         
-        z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)       
-        """z_train_l = latent.encode(
+        z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)"""       
+        z_train_l = latent.encode(
             autoencoder,
             x=x_train_l,
             y=y_train_l,
@@ -105,7 +121,7 @@ if __name__ == "__main__":
             save_cache=True
         )
 
-        z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)"""
+        z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 

@@ -79,15 +79,15 @@ z_src = latent.encode(
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst)
 else: # Beta-VAE
-    """z_class_distributions = latent.encode_class_distributions(
-        autoencoder,
-        x=x_train_l,
-        y=y_train_l,
-        n_times=2,
-        save_cache=True
-    )
+    # z_class_distributions = latent.encode_class_distributions(
+    #     autoencoder,
+    #     x=x_train_l,
+    #     y=y_train_l,
+    #     n_times=2,
+    #     save_cache=True
+    # )
 
-    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)"""
+    # z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
 
     z_train = latent.encode(
         autoencoder,
@@ -106,7 +106,7 @@ if autoencoder.decoder.requires_labels():
     z_invsrc = latent.style_class_transform(z_invdst, y_src)
 else:
     z_invsrc = latent.transform_mt(z_invdst, y_dst, y_src, z_train, y_train)
-    """z_invsrc = latent.translate(z_invdst, , y_src, z_class_distributions)"""
+    # z_invsrc = latent.translate(z_invdst, y_dst, y_src, z_class_distributions)
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 

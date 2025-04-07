@@ -5,38 +5,31 @@ def group_by_class(x, y):
     return {cls: x[y == cls] for cls in np.unique(y)}
 
 def split_dataset(x, y, p, seed=0):
-    x = np.array(x)
-    y = np.array(y)
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
 
-    yl = y
-    # Si y est catégorique, on le transforme en simple tableau de labels
     if y.ndim > 1 and y.shape[1] > 1:
         if np.all(np.sum(y, axis=1) == 1):
             yl = np.argmax(y, axis=1)
         else:
             raise ValueError("y n'est pas un tableau de labels.")
-    
+    else:
+        yl = y
+
     rng = np.random.default_rng(seed)
     
-    indices_1 = []
-    indices_2 = []
+    mask = np.zeros(len(x), dtype=bool)
     
     for cls in np.unique(yl):
-        cls_indices = np.where(yl == cls)[0]
+        cls_indices = np.flatnonzero(yl == cls)
         rng.shuffle(cls_indices)
         split_idx = int(len(cls_indices) * p)
+        mask[cls_indices[:split_idx]] = True
 
-        indices_1.extend(cls_indices[:split_idx])
-        indices_2.extend(cls_indices[split_idx:])
-    
-    indices_1 = np.array(indices_1)
-    indices_2 = np.array(indices_2)
-    
-    indices_1 = np.sort(indices_1)
-    indices_2 = np.sort(indices_2)
-    
-    x1, y1 = x[indices_1], y[indices_1]
-    x2, y2 = x[indices_2], y[indices_2]
+    x1, y1 = x[mask], y[mask]
+    x2, y2 = x[~mask], y[~mask]
     
     return x1, y1, x2, y2
 
