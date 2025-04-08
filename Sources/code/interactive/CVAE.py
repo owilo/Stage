@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from matplotlib.widgets import CheckButtons
 
-from code.models import CVAE
-from code.utils import cache
+from code.utils import models
 
-cvae = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16_2.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "category": "CVAE"}
+))
 
 (_, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
 

@@ -3,8 +3,7 @@ import tensorflow as tf
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-from code.models import BetaVAE, CVAE, Classifier
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -26,8 +25,14 @@ digit_indices = np.array([
     5333  # 9
 ])
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae128.keras")
-Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "dataset_range": (0, 1)}
+))
+
+classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "classifier"}
+))
+
 
 z_test = latent.encode(
     autoencoder,
@@ -63,7 +68,7 @@ else: # Beta-VAE
 x_decoded = autoencoder.decoder.predict(z_dst)
 x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy() # todo pour le classifieur
 
-guessed_classes, _, certainties = utils.classify(x_decoded, Classifier)
+guessed_classes, _, certainties = utils.classify(x_decoded, classifier)
 
 x_decoded = x_decoded.reshape(10, 10, 28, 28)
 guessed_classes = guessed_classes.reshape(10, 10)

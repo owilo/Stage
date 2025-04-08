@@ -4,13 +4,15 @@ import tensorflow as tf
 from keras.datasets import mnist
 
 from code.models import BetaVAE
-from code.utils import cache, utils
+from code.utils import utils, models
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "category": "BetaVAE"}
+))
 
 (_, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
 

@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.datasets import mnist
 
-from code.models import CVAE, Classifier
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -13,8 +12,13 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "CVAE" / "cvae16.keras")
-Classifier = tf.keras.models.load_model(cache.MODEL_FOLDER / "Classifier" / "classifier.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "dataset_range": (0, 1)}
+))
+
+classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "classifier"}
+))
 
 digits = np.array([
     [157, 713, 1261, 3911, 5684, 5865, 8067, 8199, 8681, 9753],
@@ -31,7 +35,7 @@ digits = np.array([
 
 original_x_sources = [x_test[class_indices] for class_indices in digits]
 x_source_all = np.concatenate(original_x_sources)
-guessed_src, _, cert_src = utils.classify(x_source_all, Classifier)
+guessed_src, _, cert_src = utils.classify(x_source_all, classifier)
 guessed_sources = guessed_src.reshape(10, 10)
 certainties_sources = cert_src.reshape(10, 10)
 
@@ -81,7 +85,7 @@ x_reconstructed = autoencoder.decoder.predict(z_inv_translated)
 
 def generate_and_save_grids(x_decoded, filename_suffix):
     x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
-    guessed, _, certainties = utils.classify(x_decoded, Classifier)
+    guessed, _, certainties = utils.classify(x_decoded, classifier)
     
     for src_class in range(10):
         class_indices = digits[src_class]

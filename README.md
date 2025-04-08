@@ -9,4 +9,4 @@
 ## Utilisation
 Pour lancer un programme:
 - `cd Sources`
-- `python -m Code.xx.yy` (par exemple `python -m Code.Training.BetaVAE`)
+- `python -m code.xx.yy` (par exemple `python -m code.models.training.betaVAE`)

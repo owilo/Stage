@@ -3,8 +3,7 @@ import tensorflow as tf
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
-from code.models import BetaVAE
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -12,7 +11,9 @@ tf.keras.utils.set_random_seed(42)
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae128.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)}
+))
 
 z = latent.encode(
     autoencoder,

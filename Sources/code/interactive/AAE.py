@@ -1,12 +1,12 @@
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-from code.models import AAE
-from code.utils import cache
+from code.utils import models
 
-dvae = tf.keras.models.load_model(cache.MODEL_FOLDER / "AAE" / "aae16.keras")
+dvae, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "category": "AAE"}
+))
 
 (_, _), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 

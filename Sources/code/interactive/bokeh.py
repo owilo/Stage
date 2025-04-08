@@ -11,14 +11,15 @@ from bokeh.layouts import row
 import base64
 import cv2
 
-from code.models import BetaVAE
-from code.utils import cache, latent, utils
+from code.utils import cache, latent, utils, models
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-autoencoder = tf.keras.models.load_model(cache.MODEL_FOLDER / "BetaVAE" / "betavae16.keras")
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)}
+))
 
 z_test = latent.encode(
     autoencoder,

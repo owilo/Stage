@@ -9,14 +9,13 @@ from code.utils import cache, latent, utils, models
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
 
-# Load and preprocess data
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-# Select and load model, then encode latent space
 autoencoder, _ = models.select_model(models.list_models(
     criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)}
 ))
+
 z_train = latent.encode(
     autoencoder,
     x=x_train,
