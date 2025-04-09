@@ -247,3 +247,44 @@ def transform_ot(z, y_src, y_dst, mappings):
 
             z_dst[mask] = scaler.inverse_transform(transformed)
     return z_dst
+
+def classify_mt(z, z_train, y_train):
+    classes = np.unique(y_train)
+    z_class_distributions = {}
+
+    for cls in classes:
+        z_cls = z_train[y_train == cls]
+
+        mu = np.mean(z_cls, axis=0)
+        Sigma = np.cov(z_cls, rowvar=False)
+
+        z_class_distributions[cls] = (mu, Sigma)
+
+    likelihoods = {}
+    d = len(z)
+
+    for cls, (mu, Sigma) in z_class_distributions.items():
+        mu = np.array(mu)
+        Sigma = np.array(Sigma)
+        
+        try:
+            Sigma_inv = np.linalg.inv(Sigma)
+            det_Sigma = np.linalg.det(Sigma)
+        except np.linalg.LinAlgError: # ajoute un petit bruit diagonal si ce n'est pas inversible
+            Sigma += np.eye(d) * 1e-6
+            Sigma_inv = np.linalg.inv(Sigma)
+            det_Sigma = np.linalg.det(Sigma)
+        
+        diff = z - mu
+        exponent = -0.5 * np.dot(diff.T, np.dot(Sigma_inv, diff))
+        
+        coeff = 1.0 / np.sqrt((2 * np.pi) ** d * det_Sigma)
+        
+        likelihood = coeff * np.exp(exponent)
+        likelihoods[cls] = likelihood
+
+    total_likelihood = sum(likelihoods.values())
+    class_probs = {cls: likelihood / total_likelihood for cls, likelihood in likelihoods.items()}
+    cls = max(class_probs, key=class_probs.get)
+    
+    return cls, class_probs
