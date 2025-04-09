@@ -1,12 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import tensorflow as tf
 from keras.datasets import mnist
 from sklearn.metrics import confusion_matrix
-import seaborn as sns
 
-from code.utils import cache, latent, utils, models
+from code.utils import cache, latent, utils, models, plots
 
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
@@ -32,32 +29,6 @@ z_train = latent.encode(
     save_cache=True
 )
 
-def compute_confusion_matrix(cm, certainties, labels, filename, title_prefix=""):
-    accuracy = np.trace(cm) / np.sum(cm)
-    avg_certainty = np.mean(certainties)
-
-    percentages = (cm / np.sum(cm, axis=1)) * 100
-
-    annot = np.empty_like(cm, dtype=object)
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            annot[i, j] = f"{percentages[i, j]:.1f}%"
-
-    plt.figure(figsize=(10, 8))
-    heatmap = sns.heatmap(percentages, annot=annot, fmt="", cmap="BuPu", xticklabels=labels, yticklabels=labels, vmin=0.0, vmax=100.0)
-
-    cbar = heatmap.collections[0].colorbar
-    cbar.ax.yaxis.set_major_formatter(mticker.PercentFormatter())
-
-    plt.xlabel("Classe prédite", fontsize=12)
-    plt.ylabel("Classe cible", fontsize=12)
-    plt.suptitle(title_prefix, fontsize=18)
-    plt.title(f"Précision : {accuracy:.2%} - Certitude moyenne : {avg_certainty:.2%}", fontsize=14)
-    plt.tight_layout()
-    plt.savefig(filename, bbox_inches='tight')
-    plt.close()
-    print(f"Matrice de confusion '{filename}' sauvegardée")
-
 def process_class_translations(source_class, z_test, y_test, z_train, y_train, result_dir):
     class_mask = (y_test == source_class)
     z_class = z_test[class_mask]
@@ -74,7 +45,7 @@ def process_class_translations(source_class, z_test, y_test, z_train, y_train, r
     guessed_labels, _, certainties = utils.classify(x_decoded, classifier)
     forward_cm = confusion_matrix(y_dst, guessed_labels, labels=np.arange(10))
     
-    compute_confusion_matrix(
+    plots.compute_confusion_matrix(
         forward_cm,
         certainties,
         np.arange(10),
@@ -123,7 +94,7 @@ for src_class in range(10):
     inverse_cm += inverse_cm_class
     all_inverse_certainties = np.concatenate((all_inverse_certainties, inverse_certainties))
 
-compute_confusion_matrix(
+plots.compute_confusion_matrix(
     combined_cm,
     all_forward_certainties,
     np.arange(10),
@@ -131,7 +102,7 @@ compute_confusion_matrix(
     "Transformation des classes i → j"
 )
 
-compute_confusion_matrix(
+plots.compute_confusion_matrix(
     inverse_cm,
     all_inverse_certainties,
     np.arange(10),

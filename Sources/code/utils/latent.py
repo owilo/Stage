@@ -4,6 +4,7 @@ import scipy
 import tensorflow as tf
 import ot
 from sklearn.preprocessing import StandardScaler
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 def autoencoder_dependant_decode(autoencoder, zp, yp):
     if autoencoder.decoder.requires_labels():
@@ -249,42 +250,17 @@ def transform_ot(z, y_src, y_dst, mappings):
     return z_dst
 
 def classify_mt(z, z_train, y_train):
-    classes = np.unique(y_train)
-    z_class_distributions = {}
+    qda = QuadraticDiscriminantAnalysis()
+    qda.fit(z_train, y_train)
 
-    for cls in classes:
-        z_cls = z_train[y_train == cls]
+    predicted_classes = qda.predict(z)
+    class_probs = qda.predict_proba(z)
+    classes = qda.classes_
 
-        mu = np.mean(z_cls, axis=0)
-        Sigma = np.cov(z_cls, rowvar=False)
+    n_samples = z.shape[0]
+    predicted_indices = np.argmax(class_probs, axis=1)
+    certainties = class_probs[np.arange(n_samples), predicted_indices]
 
-        z_class_distributions[cls] = (mu, Sigma)
+    class_probs_dict = {cls: class_probs[:, i] for i, cls in enumerate(classes)}
 
-    likelihoods = {}
-    d = len(z)
-
-    for cls, (mu, Sigma) in z_class_distributions.items():
-        mu = np.array(mu)
-        Sigma = np.array(Sigma)
-        
-        try:
-            Sigma_inv = np.linalg.inv(Sigma)
-            det_Sigma = np.linalg.det(Sigma)
-        except np.linalg.LinAlgError: # ajoute un petit bruit diagonal si ce n'est pas inversible
-            Sigma += np.eye(d) * 1e-6
-            Sigma_inv = np.linalg.inv(Sigma)
-            det_Sigma = np.linalg.det(Sigma)
-        
-        diff = z - mu
-        exponent = -0.5 * np.dot(diff.T, np.dot(Sigma_inv, diff))
-        
-        coeff = 1.0 / np.sqrt((2 * np.pi) ** d * det_Sigma)
-        
-        likelihood = coeff * np.exp(exponent)
-        likelihoods[cls] = likelihood
-
-    total_likelihood = sum(likelihoods.values())
-    class_probs = {cls: likelihood / total_likelihood for cls, likelihood in likelihoods.items()}
-    cls = max(class_probs, key=class_probs.get)
-    
-    return cls, class_probs
+    return predicted_classes, class_probs_dict, certainties
