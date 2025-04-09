@@ -15,8 +15,8 @@ classifier, _ = models.select_model(models.list_models(
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-guessed, _, certainties = utils.classify(x_train, classifier)
-cm = confusion_matrix(y_train, guessed, labels=np.arange(10))
+guessed, _, certainties = utils.classify(x_test, classifier)
+cm = confusion_matrix(y_test, guessed, labels=np.arange(10))
 plots.compute_confusion_matrix(
     cm,
     certainties,
@@ -32,12 +32,19 @@ z_train = latent.encode(
     n_times=2
 )
 
-guessed, _, certainties = latent.classify_mt(z_train, z_train, y_train)
-cm = confusion_matrix(y_train, guessed, labels=np.arange(10))
+z_test = latent.encode(
+    autoencoder,
+    x=x_test,
+    y=y_test,
+    n_times=2
+)
+
+guessed, _, certainties = latent.classify_mg(z_test, z_train, y_train)
+cm = confusion_matrix(y_test, guessed, labels=np.arange(10))
 plots.compute_confusion_matrix(
     cm,
     certainties,
     np.arange(10),
     cache.RESULTS_FOLDER / "DatasetClassification" / "vae-classification.png",
-    "Classification MNIST"
+    "Classification MNIST (QDA)"
 )

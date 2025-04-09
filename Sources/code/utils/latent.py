@@ -118,7 +118,7 @@ def translate(z, y_src, y_dst, class_distributions, use_std=True):
 def style_class_transform(z, y, num_classes=None):
     return (z, tf.keras.utils.to_categorical(y, num_classes=num_classes))
 
-def transform_mt(z_src, y_src, y_dst, z_train, y_train):
+def transform_mg(z_src, y_src, y_dst, z_train, y_train):
     """
     Transformation d'une distribution normale multidimensionnelle en une autre (VAE)
     """
@@ -249,7 +249,7 @@ def transform_ot(z, y_src, y_dst, mappings):
             z_dst[mask] = scaler.inverse_transform(transformed)
     return z_dst
 
-def classify_mt(z, z_train, y_train):
+def classify_mg(z, z_train, y_train):
     qda = QuadraticDiscriminantAnalysis()
     qda.fit(z_train, y_train)
 

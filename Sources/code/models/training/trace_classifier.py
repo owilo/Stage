@@ -121,7 +121,7 @@ if __name__ == "__main__":
             save_cache=True
         )
 
-        z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train_l, y_train_l)
+        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 

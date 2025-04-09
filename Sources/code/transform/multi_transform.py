@@ -61,7 +61,7 @@ y_dst_all = np.tile(np.arange(10), 100)
 
 #z_translated = latent.translate(z_src_all, y_src_all, y_dst_all, z_class_distributions)
 
-z_translated = latent.transform_mt(z_src_all, y_src_all, y_dst_all, z_train, y_train)
+z_translated = latent.transform_mg(z_src_all, y_src_all, y_dst_all, z_train, y_train)
 
 x_decoded = autoencoder.decoder.predict(z_translated)
 
@@ -69,7 +69,7 @@ _, _, z_reencoded = autoencoder.encoder.predict(x_decoded)
 
 #z_inv_translated = latent.translate(z_reencoded, y_dst_all, y_src_all, z_class_distributions)
 
-z_inv_translated = latent.transform_mt(z_reencoded, y_dst_all, y_src_all, z_train, y_train)
+z_inv_translated = latent.transform_mg(z_reencoded, y_dst_all, y_src_all, z_train, y_train)
 
 x_reconstructed = autoencoder.decoder.predict(z_inv_translated)
 

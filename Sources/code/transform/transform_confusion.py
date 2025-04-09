@@ -37,7 +37,7 @@ def process_class_translations(source_class, z_test, y_test, z_train, y_train, r
     y_src = np.repeat([source_class], len(z_class) * 10)
     y_dst = np.tile(np.arange(10), len(z_class))
     
-    z_dst = latent.transform_mt(z_src, y_src, y_dst, z_train, y_train)
+    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train)
 
     x_decoded = autoencoder.decoder.predict(z_dst, batch_size=128)
     x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy()
@@ -60,7 +60,7 @@ def process_inverse_translations(x_decoded_first, y_dst_labels, source_class, z_
 
     y_src = [source_class]*len(z_reencoded)
 
-    z_dst = latent.transform_mt(z_reencoded, y_dst_labels, y_src, z_train, y_train)
+    z_dst = latent.transform_mg(z_reencoded, y_dst_labels, y_src, z_train, y_train)
     
     #z_inverse_trans = latent.translate(z_reencoded, y_dst_labels, y_src, distributions)
     
