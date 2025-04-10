@@ -33,7 +33,7 @@ print("Uniforme")
 z_min = np.min(z_train, axis=0)
 z_max = np.max(z_train, axis=0)
 
-num_samples = 10000
+num_samples = 1000
 sampled_latents = np.random.uniform(low=z_min, high=z_max, size=(num_samples, z_train.shape[1]))
 
 decoded_images = autoencoder.decoder.predict(sampled_latents)
@@ -55,7 +55,7 @@ print("Prior")
 z_min = np.min(z_train, axis=0)
 z_max = np.max(z_train, axis=0)
 
-num_samples = 10000
+num_samples = 1000
 sampled_latents = np.random.normal(size=(num_samples, z_train.shape[1]))
 
 decoded_images = autoencoder.decoder.predict(sampled_latents)
@@ -70,11 +70,11 @@ for i in range(100):
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-prior.png")
 
-# VAE Distribution
+# Nearing a digit
 
-print("Distribution du VAE")
+print("Alentours d'un chiffre")
 
-num_samples = 10000
+num_samples = 1000
 idx = np.random.choice(len(z_mean), num_samples, replace=True)
 epsilon = np.random.normal(size=(num_samples, z_mean.shape[1]))
 sampled_latents = z_mean[idx] + np.exp(0.5 * z_logvar[idx]) * epsilon
@@ -88,7 +88,27 @@ for i in range(100):
     plt.imshow(decoded_images[idx[i]].squeeze(), cmap="gray")
     ax.axis("off")
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-vaeprior.png")
+plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-nearing.png")
+
+# VAE Distribution
+
+print("Distribution du VAE")
+
+num_samples = 1000
+z_mean = np.mean(z_train, axis=0)
+z_cov = np.cov(z_train.T)
+sampled_latents = np.random.multivariate_normal(z_mean, z_cov, size=num_samples)
+decoded_images = autoencoder.decoder.predict(sampled_latents)
+
+idx = np.random.choice(len(decoded_images), 100, replace=False)
+
+plt.figure(figsize=(20, 20))
+for i in range(100):
+    ax = plt.subplot(10, 10, i + 1)
+    plt.imshow(decoded_images[idx[i]].squeeze(), cmap="gray")
+    ax.axis("off")
+plt.tight_layout()
+plt.savefig(cache.RESULTS_FOLDER / "RandomSamples" / "mnist-random-samples-mg.png")
 
 # Gaussian Mixture
 
@@ -98,7 +118,7 @@ n_components = 25
 gmm = GaussianMixture(n_components=n_components, covariance_type='full', random_state=42, verbose=True)
 gmm.fit(z_train)
 
-num_samples = 10000
+num_samples = 1000
 sampled_latents, _ = gmm.sample(num_samples)
 
 decoded_images = autoencoder.decoder.predict(sampled_latents)
