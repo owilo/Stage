@@ -27,8 +27,9 @@ z_train = latent.encode(
 
 cov_whole = np.cov(z_train, rowvar=False)
 plt.figure(figsize=(10, 8))
-sns.heatmap(cov_whole, cmap="viridis")
+sns.heatmap(cov_whole, cmap="PiYG", center=0.0, vmin=-2, vmax=2)
 plt.title("Covariance")
+plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "CovariancePlots" / "covariance-plot.png")
 plt.close()
 
@@ -38,7 +39,8 @@ for i in range(10):
     cov_class = np.cov(z_class, rowvar=False)
     
     plt.figure(figsize=(10, 8))
-    sns.heatmap(cov_class, cmap="viridis")
+    sns.heatmap(cov_class, cmap="PiYG", center=0.0, vmin=-2, vmax=2)
     plt.title(f"Covariance classe {i}")
+    plt.tight_layout()
     plt.savefig(cache.RESULTS_FOLDER / "CovariancePlots" / f"covariance-plot-{i}.png")
     plt.close()
