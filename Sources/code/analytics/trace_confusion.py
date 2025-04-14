@@ -85,6 +85,29 @@ y_trans = (y_src != y_dst).astype(int)
 FOLDER = cache.RESULTS_FOLDER / "TraceConfusion"
 FOLDER.mkdir(parents=True, exist_ok=True)
 
+# Classification sans translation
+
+guessed, _, certainties = utils.classify(x_src, classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+plots.compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"classif-{model_type}-i.png",
+    f"Classification (i)"
+)
+
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_src, z_train, y_train)
+    cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-mg.png",
+        f"Classification QDA (i)"
+    )
+
 # Reconnaissance de la classe source sans translation
 guessed, _, certainties = utils.classify(x_src, trace_classifier)
 cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
@@ -106,8 +129,19 @@ plots.compute_confusion_matrix(
     certainties,
     np.arange(10),
     FOLDER / f"classif-{model_type}-i-j.png",
-    f"Classification de la translation (i → j)"
+    f"Classification (i → j)"
 )
+
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_dst, z_train, y_train)
+    cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-j-mg.png",
+        f"Classification QDA (i → j)"
+    )
 
 # Reconnaissance de la classe source après translation
 guessed, _, certainties = utils.classify(x_dst, trace_classifier)
@@ -165,6 +199,17 @@ plots.compute_confusion_matrix(
     FOLDER / f"classif-{model_type}-i-j-i.png",
     f"Classification (i → j → i)"    
 )
+
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train, y_train)
+    cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-j-i-mg.png",
+        f"Classification QDA (i → j → i)"
+    )
 
 # Détection de la translation inverse
 guessed, _, certainties = utils.classify(x_invsrc, trace_detector)

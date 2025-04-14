@@ -96,7 +96,6 @@ class Classifier(tf.keras.Model):
         return config
 
 @tf.keras.utils.register_keras_serializable()
-@tf.keras.utils.register_keras_serializable()
 class AdvClassifier(tf.keras.Model):
     def __init__(self, latent_dim_style, num_classes=10, **kwargs):
         super().__init__(**kwargs)
