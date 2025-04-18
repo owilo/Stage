@@ -123,7 +123,7 @@ def transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=None):
     n, d = z_src.shape
     
     if alpha is None:
-        alpha_vec = np.ones((n, d))
+        alpha_vec = np.zeros((n, d))  # Default to no perturbation
     else:
         a = np.asarray(alpha)
         if a.ndim == 0:
@@ -133,17 +133,17 @@ def transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=None):
         elif a.shape == (n, d):
             alpha_vec = a
         else:
-            raise ValueError("alpha invalide")
+            raise ValueError("Invalid alpha")
     
-    # labels broadcasting
+    # Labels broadcasting (unchanged)
     if np.isscalar(y_src):
         y_src = np.full(n, y_src)
     if np.isscalar(y_dst):
         y_dst = np.full(n, y_dst)
     if not (len(y_src)==len(y_dst)==n):
-        raise ValueError("z_src, y_src et y_dst doivent avoir la même longueur")
+        raise ValueError("z_src, y_src and y_dst must have the same length")
     
-    # calculer moyennes et cholesky pour chaque classe
+    # Compute class statistics (unchanged)
     classes = set(np.unique(np.concatenate([y_src, y_dst])))
     stats = {}
     for cls in classes:
@@ -154,16 +154,16 @@ def transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=None):
         L = np.linalg.cholesky(cov)
         stats[cls] = (mu, L)
     
-    # transformation
+    # Transformation (modified perturbation step)
     z_dst = np.zeros_like(z_src)
     for i in range(n):
         mu_s, L_s = stats[y_src[i]]
         mu_d, L_d = stats[y_dst[i]]
-        # sphérisation
+        # Whitening
         z_white = np.linalg.solve(L_s, (z_src[i] - mu_s))
-        # perturbation réversible
-        z_pert = alpha_vec[i] * z_white
-        # reprojection
+        # Additive perturbation with alpha
+        z_pert = z_white + alpha_vec[i]
+        # Reproject
         z_dst[i] = mu_d + L_d.dot(z_pert)
     
     return z_dst if n > 1 else z_dst[0]
