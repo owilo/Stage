@@ -61,7 +61,7 @@ z_src = latent.encode(
 
 fig, axes = plt.subplots(4, 10, figsize=(20, 8))
 
-key = 2
+key = 0
 
 np.random.seed(key)
 tf.keras.utils.set_random_seed(key)
@@ -79,7 +79,7 @@ z_train = latent.encode(
 
 n, d = z_src.shape
 
-alpha = np.random.normal(np.zeros_like(z_src), 0.5)
+alpha = np.random.normal(np.zeros_like(z_src), 1.0)
 
 z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train)
 

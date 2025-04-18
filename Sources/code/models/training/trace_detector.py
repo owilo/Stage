@@ -107,24 +107,7 @@ if __name__ == "__main__":
     if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        z_class_distributions = latent.encode_class_distributions(
-            autoencoder,
-            x=x_train_l,
-            y=y_train_l,
-            n_times=2,
-            save_cache=True
-        )
-        
-        z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
-
-        if use_alpha:
-            per_sample_std = z_std[y_src]
-            alpha = np.random.normal(0.0, per_sample_std)
-        else:
-            alpha = np.zeros_like(z_src)
-
-        z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)    
-        # z_train_l = latent.encode(
+        # z_class_distributions = latent.encode_class_distributions(
         #     autoencoder,
         #     x=x_train_l,
         #     y=y_train_l,
@@ -132,9 +115,26 @@ if __name__ == "__main__":
         #     save_cache=True
         # )
         
-        # alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
+        # z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
 
-        # z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
+        # if use_alpha:
+        #     per_sample_std = z_std[y_src]
+        #     alpha = np.random.normal(0.0, per_sample_std)
+        # else:
+        #     alpha = np.zeros_like(z_src)
+
+        # z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)    
+        z_train_l = latent.encode(
+            autoencoder,
+            x=x_train_l,
+            y=y_train_l,
+            n_times=2,
+            save_cache=True
+        )
+        
+        alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
+
+        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 

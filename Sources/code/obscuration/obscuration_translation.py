@@ -61,7 +61,7 @@ z_src = latent.encode(
 
 fig, axes = plt.subplots(4, 10, figsize=(20, 8))
 
-key = 2
+key = 3
 
 np.random.seed(key)
 tf.keras.utils.set_random_seed(key)

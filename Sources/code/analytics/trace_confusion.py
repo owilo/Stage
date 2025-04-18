@@ -54,32 +54,32 @@ z_src = latent.encode(
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst)
 else: # Beta-VAE
-    z_class_distributions = latent.encode_class_distributions(
-        autoencoder,
-        x=x_train_l,
-        y=y_train_l,
-        n_times=2,
-        save_cache=True
-    )
-
-    z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
-
-    per_sample_std = z_std[y_src]
-    alpha = np.random.normal(0.0, per_sample_std)
-    
-    z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)  
-
-    # z_train = latent.encode(
+    # z_class_distributions = latent.encode_class_distributions(
     #     autoencoder,
-    #     x=x_train,
-    #     y=y_train,
+    #     x=x_train_l,
+    #     y=y_train_l,
     #     n_times=2,
     #     save_cache=True
     # )
 
-    # alpha = np.random.normal(np.zeros_like(z_src), 0.5)
+    # z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
 
-    # z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=alpha)
+    # per_sample_std = z_std[y_src]
+    # alpha = np.random.normal(0.0, per_sample_std)
+    
+    # z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)  
+
+    z_train = latent.encode(
+        autoencoder,
+        x=x_train,
+        y=y_train,
+        n_times=2,
+        save_cache=True
+    )
+
+    alpha = np.random.normal(np.zeros_like(z_src), 0.5)
+
+    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=alpha)
 
 x_dst = autoencoder.decoder.predict(z_dst)
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
@@ -87,8 +87,8 @@ _, _, z_invdst = autoencoder.encoder.predict(x_dst)
 if autoencoder.decoder.requires_labels():
     z_invsrc = latent.style_class_transform(z_invdst, y_src)
 else:
-    # z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train, alpha=-alpha)
-    z_invsrc = latent.translate(z_invdst - alpha, y_dst, y_src, z_class_distributions)
+    z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train, alpha=-alpha)
+    # z_invsrc = latent.translate(z_invdst - alpha, y_dst, y_src, z_class_distributions)
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
@@ -109,16 +109,16 @@ plots.compute_confusion_matrix(
     f"Classification (i)"
 )
 
-# if not autoencoder.decoder.requires_labels():
-#     guessed, _, certainties = latent.classify_mg(z_src, z_train, y_train)
-#     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
-#     plots.compute_confusion_matrix(
-#         cm,
-#         certainties,
-#         np.arange(10),
-#         FOLDER / f"classif-{model_type}-i-mg.png",
-#         f"Classification QDA (i)"
-#     )
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_src, z_train, y_train)
+    cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-mg.png",
+        f"Classification QDA (i)"
+    )
 
 # Reconnaissance de la classe source sans translation
 guessed, _, certainties = utils.classify(x_src, trace_classifier)
@@ -144,16 +144,16 @@ plots.compute_confusion_matrix(
     f"Classification (i → j)"
 )
 
-# if not autoencoder.decoder.requires_labels():
-#     guessed, _, certainties = latent.classify_mg(z_dst, z_train, y_train)
-#     cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
-#     plots.compute_confusion_matrix(
-#         cm,
-#         certainties,
-#         np.arange(10),
-#         FOLDER / f"classif-{model_type}-i-j-mg.png",
-#         f"Classification QDA (i → j)"
-#     )
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_dst, z_train, y_train)
+    cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-j-mg.png",
+        f"Classification QDA (i → j)"
+    )
 
 # Reconnaissance de la classe source après translation
 guessed, _, certainties = utils.classify(x_dst, trace_classifier)
@@ -212,16 +212,16 @@ plots.compute_confusion_matrix(
     f"Classification (i → j → i)"    
 )
 
-# if not autoencoder.decoder.requires_labels():
-#     guessed, _, certainties = latent.classify_mg(z_invsrc, z_train, y_train)
-#     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
-#     plots.compute_confusion_matrix(
-#         cm,
-#         certainties,
-#         np.arange(10),
-#         FOLDER / f"classif-{model_type}-i-j-i-mg.png",
-#         f"Classification QDA (i → j → i)"
-#     )
+if not autoencoder.decoder.requires_labels():
+    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train, y_train)
+    cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-{model_type}-i-j-i-mg.png",
+        f"Classification QDA (i → j → i)"
+    )
 
 # Détection de la translation inverse
 guessed, _, certainties = utils.classify(x_invsrc, trace_detector)
