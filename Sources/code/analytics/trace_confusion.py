@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
+import argparse
 
 from code.utils import cache, latent, utils, models, plots
 
@@ -36,7 +37,11 @@ trace_detector, _ = models.select_model(models.list_models(
     criteria={"type": "trace_detector", "autoencoder": autoencoder_definition["category"], "dataset_range": (0.5, 1)},
 ))
 
-model_type = "cvae" if autoencoder_definition["labels"] else "betavae"
+parser = argparse.ArgumentParser(description="Nom du fichier")
+parser.add_argument("--name", type=str, help="Nom du fichier")
+args = parser.parse_args()
+
+model_type = args.name if args.name else ("cvae" if autoencoder_definition["labels"] else "betavae")
 
 z_src = latent.encode(
     autoencoder,
@@ -67,7 +72,9 @@ else: # Beta-VAE
         save_cache=True
     )
 
-    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train)
+    alpha = np.random.normal(np.zeros_like(z_src), 0.5)
+
+    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=alpha)
 
 x_dst = autoencoder.decoder.predict(z_dst)
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
@@ -75,7 +82,7 @@ _, _, z_invdst = autoencoder.encoder.predict(x_dst)
 if autoencoder.decoder.requires_labels():
     z_invsrc = latent.style_class_transform(z_invdst, y_src)
 else:
-    z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train)
+    z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train, alpha=-alpha)
     # z_invsrc = latent.translate(z_invdst, y_dst, y_src, z_class_distributions)
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
