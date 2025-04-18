@@ -118,46 +118,55 @@ def translate(z, y_src, y_dst, class_distributions, use_std=True):
 def style_class_transform(z, y, num_classes=None):
     return (z, tf.keras.utils.to_categorical(y, num_classes=num_classes))
 
-def transform_mg(z_src, y_src, y_dst, z_train, y_train):
-    """
-    Transformation d'une distribution normale multidimensionnelle en une autre (VAE)
-    """
+def transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=None):
     z_src = np.asarray(z_src)
-    n = z_src.shape[0]
+    n, d = z_src.shape
     
+    if alpha is None:
+        alpha_vec = np.ones((n, d))
+    else:
+        a = np.asarray(alpha)
+        if a.ndim == 0:
+            alpha_vec = np.full((n, d), float(a))
+        elif a.ndim == 1 and a.shape[0] == d:
+            alpha_vec = np.tile(a, (n, 1))
+        elif a.shape == (n, d):
+            alpha_vec = a
+        else:
+            raise ValueError("alpha invalide")
+    
+    # labels broadcasting
     if np.isscalar(y_src):
-        y_src = np.full(len(z_src), y_src)
+        y_src = np.full(n, y_src)
     if np.isscalar(y_dst):
-        y_dst = np.full(len(z_src), y_dst)
-        
-    if len(z_src) != len(y_src) or len(y_src) != len(y_dst):
-        raise ValueError(f"z_src ({len(z_src)}), y_src ({len(y_src)}) et y_dst ({len(y_dst)}) doivent être de la même taille")
-
-    classes_needed = set(np.concatenate([np.unique(y_src), np.unique(y_dst)]))
-    stats = {}
-    for cls in classes_needed:
-        indices = np.where(y_train == cls)[0]
-        z_cls = z_train[indices]
-        mu = np.mean(z_cls, axis=0)
-        sigma = np.cov(z_cls, rowvar=False)
-        L = np.linalg.cholesky(sigma)
-        stats[cls] = (mu, L)
-
-    z_dst = np.zeros_like(z_src)
+        y_dst = np.full(n, y_dst)
+    if not (len(y_src)==len(y_dst)==n):
+        raise ValueError("z_src, y_src et y_dst doivent avoir la même longueur")
     
+    # calculer moyennes et cholesky pour chaque classe
+    classes = set(np.unique(np.concatenate([y_src, y_dst])))
+    stats = {}
+    for cls in classes:
+        idx = np.where(y_train == cls)[0]
+        zc = z_train[idx]
+        mu = np.mean(zc, axis=0)
+        cov = np.cov(zc, rowvar=False)
+        L = np.linalg.cholesky(cov)
+        stats[cls] = (mu, L)
+    
+    # transformation
+    z_dst = np.zeros_like(z_src)
     for i in range(n):
-        src_cls = y_src[i]
-        dst_cls = y_dst[i]
-        mu_src, L_src = stats[src_cls]
-        mu_dst, L_dst = stats[dst_cls]
-        
-        # https://en.wikipedia.org/wiki/Whitening_transformation
-        z_whitened = np.linalg.solve(L_src, (z_src[i] - mu_src))
-        z_dst[i] = mu_dst + L_dst.dot(z_whitened)
-        
-    if z_dst.shape[0] == 1:
-        return z_dst[0]
-    return z_dst
+        mu_s, L_s = stats[y_src[i]]
+        mu_d, L_d = stats[y_dst[i]]
+        # sphérisation
+        z_white = np.linalg.solve(L_s, (z_src[i] - mu_s))
+        # perturbation réversible
+        z_pert = alpha_vec[i] * z_white
+        # reprojection
+        z_dst[i] = mu_d + L_d.dot(z_pert)
+    
+    return z_dst if n > 1 else z_dst[0]
 
 def compute_mappings_ot(z_classes, y_classes, subsample_ratio=0.3, save_cache=True, verbose=None):
     """
