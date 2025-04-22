@@ -74,17 +74,17 @@ else:
 
         z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions, use_std=transform_method == 1)
     else:
-        z_train_r = latent.encode(
+        z_train = latent.encode(
             autoencoder,
-            x=x_train_r,
-            y=y_train_r,
+            x=x_train,
+            y=y_train,
             n_times=2,
             save_cache=True
         )
         
         alpha = np.random.normal(np.zeros_like(z_src), 0.5)
 
-        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_r, y_train_r, alpha=alpha)
+        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=None)
 
 x_dst = autoencoder.decoder.predict(z_dst)
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
@@ -95,7 +95,7 @@ else:
     if transform_method == 0 or transform_method == 1:
         z_invsrc = latent.translate(z_invdst - alpha, y_dst, y_src, z_class_distributions, use_std=transform_method == 1)
     else:
-        z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train_r, y_train_r, alpha=-alpha)
+        z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train, alpha=-alpha)
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
@@ -117,7 +117,7 @@ plots.compute_confusion_matrix(
 )
 
 if transform_method == 2:
-    guessed, _, certainties = latent.classify_mg(z_src, z_train_r, y_train_r)
+    guessed, _, certainties = latent.classify_mg(z_src, z_train, y_train)
     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,
@@ -152,7 +152,7 @@ plots.compute_confusion_matrix(
 )
 
 if transform_method == 2:
-    guessed, _, certainties = latent.classify_mg(z_dst, z_train_r, y_train_r)
+    guessed, _, certainties = latent.classify_mg(z_dst, z_train, y_train)
     cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,
@@ -220,7 +220,7 @@ plots.compute_confusion_matrix(
 )
 
 if transform_method == 2:
-    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train_r, y_train_r)
+    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train, y_train)
     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,
