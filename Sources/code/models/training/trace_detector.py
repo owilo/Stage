@@ -3,6 +3,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 import argparse
+from sklearn.utils import class_weight
 
 from code.utils import latent, utils, models
 
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     parser.add_argument("--name", type=str, default="trace-detector", help="Nom du modèle")
     parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
     parser.add_argument("-a", action='store_true', help="Valeur de alpha pour la perturbation")
+    parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
 
     args = parser.parse_args()
 
@@ -68,6 +70,9 @@ if __name__ == "__main__":
     name = args.name
     default_autoencoder = args.autoencoder
     use_alpha = args.a
+    transform_method = args.t
+    if transform_method not in list(range(3)):
+        raise ValueError("Méthode de transformation invalide. Choisissez 0, 1 ou 2.")
 
     autoencoder, autoencoder_definition = models.select_model(models.list_models(
         criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
@@ -107,68 +112,66 @@ if __name__ == "__main__":
     if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        # z_class_distributions = latent.encode_class_distributions(
-        #     autoencoder,
-        #     x=x_train_l,
-        #     y=y_train_l,
-        #     n_times=2,
-        #     save_cache=True
-        # )
-        
-        # z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
+        if transform_method == 0 or transform_method == 1:
+            z_class_distributions = latent.encode_class_distributions(
+                autoencoder,
+                x=x_train_l,
+                y=y_train_l,
+                n_times=2,
+                save_cache=True
+            )
+            
+            z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
 
-        # if use_alpha:
-        #     per_sample_std = z_std[y_src]
-        #     alpha = np.random.normal(0.0, per_sample_std)
-        # else:
-        #     alpha = np.zeros_like(z_src)
+            if use_alpha:
+                per_sample_std = z_std[y_src]
+                alpha = np.random.normal(0.0, per_sample_std)
+            else:
+                alpha = np.zeros_like(z_src)
 
-        # z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)    
-        z_train_l = latent.encode(
-            autoencoder,
-            x=x_train_l,
-            y=y_train_l,
-            n_times=2,
-            save_cache=True
-        )
-        
-        alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
+            z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions, use_std=transform_method == 1)
+        else:
+            z_train_l = latent.encode(
+                autoencoder,
+                x=x_train_l,
+                y=y_train_l,
+                n_times=2,
+                save_cache=True
+            )
+            
+            alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
 
-        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
+            z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 
-    # Les non-translatés restent inchangés (aucun encodage-décodage)
-    mask = (y_src == y_dst)
-    x_dst[mask] = x_src[mask]
+    # 50% des non-translatés restent inchangés (aucun encodage-décodage)
+    """mask = (y_src == y_dst)
+    indices = np.where(mask)[0]
+
+    num_to_select = len(indices) // 2
+    selected_indices = np.random.choice(indices, size=num_to_select, replace=False)
+
+    x_dst[selected_indices] = x_src[selected_indices]"""
 
     x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
 
     y_trans = (y_src != y_dst).astype(int)
 
-    # todo balance?
-    ones_idx = np.where(y_trans == 1)[0]
-    zeros_idx = np.where(y_trans == 0)[0]
-
-    if len(ones_idx) > len(zeros_idx):
-        ones_idx_downsampled = np.random.choice(ones_idx, size=len(zeros_idx), replace=False)
-        zeros_idx_downsampled = zeros_idx
-    else:
-        zeros_idx_downsampled = np.random.choice(zeros_idx, size=len(ones_idx), replace=False)
-        ones_idx_downsampled = ones_idx
-
-    balanced_indices = np.concatenate([ones_idx_downsampled, zeros_idx_downsampled])
-    np.random.shuffle(balanced_indices)
-
-    x_dst_balanced = x_dst[balanced_indices]
-    y_trans_balanced = y_trans[balanced_indices]
+    weights = class_weight.compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_trans),
+        y=y_trans
+    )
+    class_weight_dict = {i: w for i, w in enumerate(weights)}
 
     trace_detector.fit(
-        x_dst_balanced,
-        y_trans_balanced,
+        x_dst,
+        y_trans,
         batch_size=batch_size,
         epochs=num_epochs,
-        validation_split=0.1
+        validation_split=0.1,
+        class_weight=class_weight_dict
     )
 
     model_definition = {

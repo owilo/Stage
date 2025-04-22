@@ -60,6 +60,8 @@ if __name__ == "__main__":
     parser.add_argument("--name", type=str, default="trace-classifier", help="Nom du modèle")
     parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
     parser.add_argument("-a", action='store_true', help="Valeur de alpha pour la perturbation")
+    parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
+
     args = parser.parse_args()
 
     num_epochs = args.e
@@ -67,6 +69,9 @@ if __name__ == "__main__":
     name = args.name
     default_autoencoder = args.autoencoder
     use_alpha = args.a
+    transform_method = args.t
+    if transform_method not in list(range(3)):
+        raise ValueError("Méthode de transformation invalide. Choisissez 0, 1 ou 2.")
 
     autoencoder, autoencoder_definition = models.select_model(models.list_models(
         criteria={"type": "autoencoder", "dataset_range": (0, 0.5)}
@@ -106,34 +111,36 @@ if __name__ == "__main__":
     if autoencoder_definition["labels"]:
         z_dst = latent.style_class_transform(z_src, y_dst)
     else:
-        # z_class_distributions = latent.encode_class_distributions(
-        #     autoencoder,
-        #     x=x_train_l,
-        #     y=y_train_l,
-        #     n_times=2,
-        #     save_cache=True
-        # )
-        
-        # z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
+        if transform_method == 0 or transform_method == 1:
+            z_class_distributions = latent.encode_class_distributions(
+                autoencoder,
+                x=x_train_l,
+                y=y_train_l,
+                n_times=2,
+                save_cache=True
+            )
+            
+            z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
 
-        # if use_alpha:
-        #     per_sample_std = z_std[y_src]
-        #     alpha = np.random.normal(0.0, per_sample_std)
-        # else:
-        #     alpha = np.zeros_like(z_src)
+            if use_alpha:
+                per_sample_std = z_std[y_src]
+                alpha = np.random.normal(0.0, per_sample_std)
+            else:
+                alpha = np.zeros_like(z_src)
 
-        # z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)       
-        z_train_l = latent.encode(
-            autoencoder,
-            x=x_train_l,
-            y=y_train_l,
-            n_times=2,
-            save_cache=True
-        )
-        
-        alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
+            z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions, use_std=transform_method == 1)
+        else:
+            z_train_l = latent.encode(
+                autoencoder,
+                x=x_train_l,
+                y=y_train_l,
+                n_times=2,
+                save_cache=True
+            )
+            
+            alpha = np.random.normal(np.zeros_like(z_src), 0.5) if use_alpha else None
 
-        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
+            z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_l, y_train_l, alpha=alpha)
 
     x_dst = autoencoder.decoder.predict(z_dst)
 

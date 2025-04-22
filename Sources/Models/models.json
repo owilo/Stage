@@ -237,45 +237,99 @@
         "autoencoder": "CVAE"
     },
     {
-        "type": "trace_detector",
+        "type": "trace_classifier",
         "category": "Classifier",
-        "name": "trace-detector-betavae",
+        "name": "trace-classifier-betavae128",
         "input_shape": [
-            28,
-            28,
+            64,
+            64,
             1
         ],
         "output_shape": [
-            2
+            10
         ],
         "dataset_range": [
-            0,
+            0.5,
             1
         ],
         "autoencoder": "BetaVAE"
     },
     {
-        "type": "trace_detector",
+        "type": "trace_classifier",
         "category": "Classifier",
-        "name": "trace-detector-cvae",
+        "name": "trace-classifier-betavae16",
         "input_shape": [
-            28,
-            28,
+            64,
+            64,
             1
         ],
         "output_shape": [
-            2
+            10
         ],
         "dataset_range": [
-            0,
+            0.5,
             1
         ],
-        "autoencoder": "CVAE"
+        "autoencoder": "BetaVAE"
     },
     {
         "type": "trace_classifier",
         "category": "Classifier",
-        "name": "trace-classifier-betavae128",
+        "name": "trace-classifier-betavae128-std",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "name": "trace-classifier-betavae128-mt",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "name": "trace-classifier-betavae128-mt-alpha",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "name": "trace-classifier-betavae128-alpha",
         "input_shape": [
             64,
             64,
@@ -309,27 +363,9 @@
         "autoencoder": "BetaVAE"
     },
     {
-        "type": "trace_classifier",
-        "category": "Classifier",
-        "name": "trace-classifier-betavae16",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            10
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
         "type": "trace_detector",
         "category": "Classifier",
-        "name": "trace-detector-betavae16",
+        "name": "trace-detector-betavae128-alpha",
         "input_shape": [
             64,
             64,
@@ -337,78 +373,6 @@
         ],
         "output_shape": [
             2
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
-        "type": "trace_classifier",
-        "category": "Classifier",
-        "name": "trace-classifier-betavae128-std",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            10
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
-        "type": "trace_detector",
-        "category": "Classifier",
-        "name": "trace-detector",
-        "input_shape": [
-            28,
-            28,
-            1
-        ],
-        "output_shape": [
-            2
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "CVAE"
-    },
-    {
-        "type": "trace_detector",
-        "category": "Classifier",
-        "name": "trace-detector-betavae128-std",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            2
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
-        "type": "trace_classifier",
-        "category": "Classifier",
-        "name": "trace-classifier-betavae128-mt",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            10
         ],
         "dataset_range": [
             0.5,
@@ -435,63 +399,9 @@
         "autoencoder": "BetaVAE"
     },
     {
-        "type": "trace_classifier",
-        "category": "Classifier",
-        "name": "trace-classifier-betavae128-mt-alpha",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            10
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
         "type": "trace_detector",
         "category": "Classifier",
         "name": "trace-detector-betavae128-mt-alpha",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            2
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
-        "type": "trace_classifier",
-        "category": "Classifier",
-        "name": "trace-classifier-betavae128-alpha",
-        "input_shape": [
-            64,
-            64,
-            1
-        ],
-        "output_shape": [
-            10
-        ],
-        "dataset_range": [
-            0.5,
-            1
-        ],
-        "autoencoder": "BetaVAE"
-    },
-    {
-        "type": "trace_detector",
-        "category": "Classifier",
-        "name": "trace-detector-betavae128-alpha",
         "input_shape": [
             64,
             64,
