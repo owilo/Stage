@@ -39,9 +39,13 @@ trace_detector, _ = models.select_model(models.list_models(
 
 parser = argparse.ArgumentParser(description="Nom du fichier")
 parser.add_argument("--name", type=str, help="Nom du fichier")
+parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
 args = parser.parse_args()
 
 model_type = args.name if args.name else ("cvae" if autoencoder_definition["labels"] else "betavae")
+transform_method = args.t
+if transform_method not in list(range(3)):
+    raise ValueError("Méthode de transformation invalide. Choisissez 0, 1 ou 2.")
 
 z_src = latent.encode(
     autoencoder,
@@ -51,35 +55,36 @@ z_src = latent.encode(
     save_cache=True
 )
 
-if autoencoder.decoder.requires_labels(): # CVAE
+if autoencoder_definition["labels"]:
     z_dst = latent.style_class_transform(z_src, y_dst)
-else: # Beta-VAE
-    # z_class_distributions = latent.encode_class_distributions(
-    #     autoencoder,
-    #     x=x_train_l,
-    #     y=y_train_l,
-    #     n_times=2,
-    #     save_cache=True
-    # )
+else:
+    if transform_method == 0 or transform_method == 1:
+        z_class_distributions = latent.encode_class_distributions(
+            autoencoder,
+            x=x_train_r,
+            y=y_train_r,
+            n_times=2,
+            save_cache=True
+        )
+        
+        z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
 
-    # z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
+        per_sample_std = z_std[y_src]
+        alpha = np.random.normal(0.0, per_sample_std)
 
-    # per_sample_std = z_std[y_src]
-    # alpha = np.random.normal(0.0, per_sample_std)
-    
-    # z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions)  
+        z_dst = latent.translate(z_src + alpha, y_src, y_dst, z_class_distributions, use_std=transform_method == 1)
+    else:
+        z_train_r = latent.encode(
+            autoencoder,
+            x=x_train_r,
+            y=y_train_r,
+            n_times=2,
+            save_cache=True
+        )
+        
+        alpha = np.random.normal(np.zeros_like(z_src), 0.5)
 
-    z_train = latent.encode(
-        autoencoder,
-        x=x_train,
-        y=y_train,
-        n_times=2,
-        save_cache=True
-    )
-
-    alpha = np.random.normal(np.zeros_like(z_src), 0.5)
-
-    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train, y_train, alpha=alpha)
+        z_dst = latent.transform_mg(z_src, y_src, y_dst, z_train_r, y_train_r, alpha=alpha)
 
 x_dst = autoencoder.decoder.predict(z_dst)
 _, _, z_invdst = autoencoder.encoder.predict(x_dst)
@@ -87,8 +92,10 @@ _, _, z_invdst = autoencoder.encoder.predict(x_dst)
 if autoencoder.decoder.requires_labels():
     z_invsrc = latent.style_class_transform(z_invdst, y_src)
 else:
-    z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train, y_train, alpha=-alpha)
-    # z_invsrc = latent.translate(z_invdst - alpha, y_dst, y_src, z_class_distributions)
+    if transform_method == 0 or transform_method == 1:
+        z_invsrc = latent.translate(z_invdst - alpha, y_dst, y_src, z_class_distributions, use_std=transform_method == 1)
+    else:
+        z_invsrc = latent.transform_mg(z_invdst, y_dst, y_src, z_train_r, y_train_r, alpha=-alpha)
 
 x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
@@ -109,8 +116,8 @@ plots.compute_confusion_matrix(
     f"Classification (i)"
 )
 
-if not autoencoder.decoder.requires_labels():
-    guessed, _, certainties = latent.classify_mg(z_src, z_train, y_train)
+if transform_method == 2:
+    guessed, _, certainties = latent.classify_mg(z_src, z_train_r, y_train_r)
     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,
@@ -144,8 +151,8 @@ plots.compute_confusion_matrix(
     f"Classification (i → j)"
 )
 
-if not autoencoder.decoder.requires_labels():
-    guessed, _, certainties = latent.classify_mg(z_dst, z_train, y_train)
+if transform_method == 2:
+    guessed, _, certainties = latent.classify_mg(z_dst, z_train_r, y_train_r)
     cm = confusion_matrix(y_dst, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,
@@ -212,8 +219,8 @@ plots.compute_confusion_matrix(
     f"Classification (i → j → i)"    
 )
 
-if not autoencoder.decoder.requires_labels():
-    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train, y_train)
+if transform_method == 2:
+    guessed, _, certainties = latent.classify_mg(z_invsrc, z_train_r, y_train_r)
     cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
     plots.compute_confusion_matrix(
         cm,

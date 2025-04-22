@@ -146,17 +146,28 @@ if __name__ == "__main__":
     x_dst = autoencoder.decoder.predict(z_dst)
 
     # 50% des non-translatés restent inchangés (aucun encodage-décodage)
-    """mask = (y_src == y_dst)
-    indices = np.where(mask)[0]
+    """mask = 
+    indices = np.where((y_src == y_dst))[0]
 
-    num_to_select = len(indices) // 2
-    selected_indices = np.random.choice(indices, size=num_to_select, replace=False)
+    selected_indices = np.random.choice(indices, size=len(indices) // 2, replace=False)
 
-    x_dst[selected_indices] = x_src[selected_indices]"""
+    x_dst[selected_indices] = x_src[selected_indices]
 
     x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
 
-    y_trans = (y_src != y_dst).astype(int)
+    y_trans = (y_src != y_dst).astype(int)"""
+
+    indices = np.where((y_src == y_dst))[0]
+
+    selected_indices = np.random.choice(indices, size=len(indices) // 2, replace=False)
+
+    x_dst[selected_indices] = x_src[selected_indices]
+
+    x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
+
+    y_trans = np.ones_like(y_src, dtype=bool)
+
+    y_trans[x_dst == x_src] = False
 
     weights = class_weight.compute_class_weight(
         class_weight='balanced',
@@ -179,7 +190,7 @@ if __name__ == "__main__":
         "category": "Classifier",
         "name": name,
         "input_shape": list(input_shape),
-        "output_shape": [2,],
+        "output_shape": [1,],
         "dataset_range": [0.5, 1],
         "autoencoder": autoencoder_definition["category"]
     }
