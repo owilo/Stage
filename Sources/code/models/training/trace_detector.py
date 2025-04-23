@@ -3,7 +3,6 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 import argparse
-from sklearn.utils import class_weight
 
 from code.utils import latent, utils, models
 
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", type=int, default=16, help="Taille de batch")
     parser.add_argument("--name", type=str, default="trace-detector", help="Nom du modèle")
     parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
-    parser.add_argument("-a", action='store_true', help="Valeur de alpha pour la perturbation")
+    parser.add_argument("-a", action='store_true', help="Inclusion de la perturbation")
     parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
 
     args = parser.parse_args()
@@ -99,7 +98,9 @@ if __name__ == "__main__":
 
     x_train_rl = utils.resize(x_train_rl, input_shape)
 
-    x_src, y_src, y_dst = utils.split_src_to_dst(x_train_rl, y_train_rl)
+    x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rl, y_train_rl, 0.5, seed=None)
+
+    x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 
     z_src = latent.encode(
         autoencoder,
@@ -145,44 +146,16 @@ if __name__ == "__main__":
 
     x_dst = autoencoder.decoder.predict(z_dst)
 
-    # 50% des non-translatés restent inchangés (aucun encodage-décodage)
-    """mask = 
-    indices = np.where((y_src == y_dst))[0]
-
-    selected_indices = np.random.choice(indices, size=len(indices) // 2, replace=False)
-
-    x_dst[selected_indices] = x_src[selected_indices]
-
-    x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
-
-    y_trans = (y_src != y_dst).astype(int)"""
-
-    indices = np.where((y_src == y_dst))[0]
-
-    selected_indices = np.random.choice(indices, size=len(indices) // 2, replace=False)
-
-    x_dst[selected_indices] = x_src[selected_indices]
-
-    x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
-
-    y_trans = np.ones_like(y_src, dtype=bool)
-
-    y_trans[x_dst == x_src] = False
-
-    weights = class_weight.compute_class_weight(
-        class_weight='balanced',
-        classes=np.unique(y_trans),
-        y=y_trans
-    )
-    class_weight_dict = {i: w for i, w in enumerate(weights)}
+    x_det = np.concatenate((x_ori, x_dst))
+    y_det = np.concatenate((np.zeros_like(y_ori, dtype=bool), np.ones_like(y_dst, dtype=bool)))
+    x_det, y_det = utils.shuffle(x_det, y_det)
 
     trace_detector.fit(
-        x_dst,
-        y_trans,
+        x_det,
+        y_det,
         batch_size=batch_size,
         epochs=num_epochs,
-        validation_split=0.1,
-        class_weight=class_weight_dict
+        validation_split=0.1
     )
 
     model_definition = {

@@ -1,2 +1,5 @@
-python -m code.analytics.trace_confusion --name "betavae-alpha" -t 0
-python -m code.analytics.trace_confusion --name "betavae-mt-alpha" -t 2
+python -m code.analytics.trace_confusion --name "betavae" -t 0 --autoencoder "h-betavae128" --classifier "classifier" --tdetector "trace-detector-betavae128" --tclassifier "trace-classifier-betavae128"
+python -m code.analytics.trace_confusion --name "betavae-alpha" -t 0 -a --autoencoder "h-betavae128" --classifier "classifier" --tdetector "trace-detector-betavae128-alpha" --tclassifier "trace-classifier-betavae128-alpha"
+
+python -m code.analytics.trace_confusion --name "betavae-mt" -t 2 --autoencoder "h-betavae128" --classifier "classifier" --tdetector "trace-detector-betavae128-mt" --tclassifier "trace-classifier-betavae128-mt"
+python -m code.analytics.trace_confusion --name "betavae-mt-alpha" -t 2 -a --autoencoder "h-betavae128" --classifier "classifier" --tdetector "trace-detector-betavae128-mt-alpha" --tclassifier "trace-classifier-betavae128-mt-alpha"

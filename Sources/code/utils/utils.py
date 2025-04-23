@@ -18,13 +18,15 @@ def split_dataset(x, y, p, seed=0):
     else:
         yl = y
 
-    rng = np.random.default_rng(seed)
+    if seed is not None:
+        rng = np.random.default_rng(seed)
     
     mask = np.zeros(len(x), dtype=bool)
     
     for cls in np.unique(yl):
         cls_indices = np.flatnonzero(yl == cls)
-        rng.shuffle(cls_indices)
+        if seed is not None:
+            rng.shuffle(cls_indices)
         split_idx = int(len(cls_indices) * p)
         mask[cls_indices[:split_idx]] = True
 

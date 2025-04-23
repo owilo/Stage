@@ -354,7 +354,7 @@
             1
         ],
         "output_shape": [
-            2
+            1
         ],
         "dataset_range": [
             0.5,
@@ -372,7 +372,7 @@
             1
         ],
         "output_shape": [
-            2
+            1
         ],
         "dataset_range": [
             0.5,
@@ -390,7 +390,7 @@
             1
         ],
         "output_shape": [
-            2
+            1
         ],
         "dataset_range": [
             0.5,
@@ -408,7 +408,7 @@
             1
         ],
         "output_shape": [
-            2
+            1
         ],
         "dataset_range": [
             0.5,

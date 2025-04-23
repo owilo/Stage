@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", type=int, default=16, help="Taille de batch")
     parser.add_argument("--name", type=str, default="trace-classifier", help="Nom du modèle")
     parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
-    parser.add_argument("-a", action='store_true', help="Valeur de alpha pour la perturbation")
+    parser.add_argument("-a", action='store_true', help="Inclusion de la perturbation")
     parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
 
     args = parser.parse_args()
