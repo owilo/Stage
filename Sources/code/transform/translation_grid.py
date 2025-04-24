@@ -38,7 +38,7 @@ z_test = latent.encode(
     autoencoder,
     x=x_test[digit_indices],
     y=y_test[digit_indices],
-    n_times=3,
+    n_times=2,
     save_cache=False
 )
 
@@ -53,8 +53,6 @@ else: # BetaVAE
         save_cache=True
     )
 
-fig, axes = plt.subplots(10, 10, figsize=(20, 20))
-
 y_src = np.repeat(np.arange(10), 10)  # [0, 0, ..., 9, 9]
 y_dst = np.tile(np.arange(10), 10)  # [0, 1, ..., 9, 0, 1, ..., 9]
 
@@ -63,23 +61,73 @@ z_src = np.repeat(z_test, 10, axis=0)
 if autoencoder.decoder.requires_labels(): # CVAE
     z_dst = latent.style_class_transform(z_src, y_dst)
 else: # Beta-VAE
-    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions)
+    z_dst = latent.translate(z_src, y_src, y_dst, z_class_distributions, use_std=False)
 
-x_decoded = autoencoder.decoder.predict(z_dst)
-x_decoded = tf.image.resize(x_decoded, (28, 28)).numpy() # todo pour le classifieur
+x_dst = autoencoder.decoder.predict(z_dst)
+_, _, z_invdst = autoencoder.encoder.predict(x_dst)
 
-guessed_classes, _, certainties = utils.classify(x_decoded, classifier)
+if autoencoder.decoder.requires_labels(): # CVAE
+    z_invsrc = latent.style_class_transform(z_invdst, y_src)
+else: # Beta-VAE
+    z_invsrc = latent.translate(z_invdst, y_dst, y_src, z_class_distributions, use_std=False)
 
-x_decoded = x_decoded.reshape(10, 10, 28, 28)
-guessed_classes = guessed_classes.reshape(10, 10)
-certainties = certainties.reshape(10, 10)
+x_invsrc = autoencoder.decoder.predict(z_invsrc)
 
+x_dst = utils.resize(x_dst, (28, 28)) # todo pour le classifieur
+x_invsrc = utils.resize(x_invsrc, (28, 28))
+
+guessed_classes_dst, _, certainties_dst = utils.classify(x_dst, classifier)
+guessed_classes_invsrc, _, certainties_invsrc = utils.classify(x_invsrc, classifier)
+
+x_dst = x_dst.reshape(10, 10, 28, 28)
+guessed_classes_dst = guessed_classes_dst.reshape(10, 10)
+certainties_dst = certainties_dst.reshape(10, 10)
+
+x_invsrc = x_invsrc.reshape(10, 10, 28, 28)
+guessed_classes_invsrc = guessed_classes_invsrc.reshape(10, 10)
+certainties_invsrc = certainties_invsrc.reshape(10, 10)
+
+fig, axes = plt.subplots(10, 11, figsize=(22, 20))
 for src_class in range(10):
+    ax = axes[src_class, 0]
+    ax.imshow(x_test[digit_indices][src_class], cmap="gray")
+    ax.axis('off')
+
     for dst_class in range(10):
-        ax = axes[src_class, dst_class]
-        ax.imshow(x_decoded[src_class, dst_class], cmap="gray")
-        ax.text(0.5, -0.15, f"({guessed_classes[src_class, dst_class]}, {certainties[src_class, dst_class]:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
+        ax = axes[src_class, dst_class + 1]
+        ax.imshow(x_dst[src_class, dst_class], cmap="gray")
+        ax.text(0.5, -0.15, f"({guessed_classes_dst[src_class, dst_class]}, {certainties_dst[src_class, dst_class]:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
         ax.axis('off')
 
 plt.tight_layout()
+fig.canvas.draw()
+
+col0_right = axes[0, 0].get_position().x1
+col1_left = axes[0, 1].get_position().x0
+line_x = (col0_right + col1_left) / 2
+
+fig.add_artist(plt.Line2D([line_x, line_x], [0, 1], color='red', linewidth=4, transform=fig.transFigure))
 plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-grid.png")
+
+
+fig, axes = plt.subplots(10, 11, figsize=(22, 20))
+for src_class in range(10):
+    ax = axes[src_class, 0]
+    ax.imshow(x_test[digit_indices][src_class], cmap="gray")
+    ax.axis('off')
+
+    for dst_class in range(10):
+        ax = axes[src_class, dst_class + 1]
+        ax.imshow(x_invsrc[src_class, dst_class], cmap="gray")
+        ax.text(0.5, -0.15, f"({guessed_classes_invsrc[src_class, dst_class]}, {certainties_invsrc[src_class, dst_class]:.3f})", fontsize=14, color="blue", ha="center", transform=ax.transAxes)
+        ax.axis('off')
+
+plt.tight_layout()
+fig.canvas.draw()
+
+col0_right = axes[0, 0].get_position().x1
+col1_left = axes[0, 1].get_position().x0
+line_x = (col0_right + col1_left) / 2
+
+fig.add_artist(plt.Line2D([line_x, line_x], [0, 1], color='red', linewidth=4, transform=fig.transFigure))
+plt.savefig(cache.RESULTS_FOLDER / "mnist-inverse-translation-grid.png")

@@ -101,11 +101,11 @@ for i in range(digit_indices.shape[0]):
     axes[i, 4].imshow(x_invsrc[i], cmap="gray")
     axes[i, 4].axis('off')
 
-axes[0, 0].set_title("Original")
-axes[0, 1].set_title("Reencoded")
-axes[0, 2].set_title("Translated")
-axes[0, 3].set_title("Obscured")
-axes[0, 4].set_title("Recovered")
+axes[0, 0].set_title("Original", fontsize=18)
+axes[0, 1].set_title("Reencoded", fontsize=18)
+axes[0, 2].set_title("Translated", fontsize=18)
+axes[0, 3].set_title("Obscured", fontsize=18)
+axes[0, 4].set_title("Recovered", fontsize=18)
     
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / f"mnist-obscuration-translation-examples-{key}.png")

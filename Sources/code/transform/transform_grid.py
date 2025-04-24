@@ -37,7 +37,7 @@ z_test = latent.encode(
     autoencoder,
     x=x_test[digit_indices],
     y=y_test[digit_indices],
-    n_times=3,
+    n_times=2,
     save_cache=False
 )
 
@@ -82,4 +82,11 @@ for src_class in range(10):
         ax.axis('off')
 
 plt.tight_layout()
+fig.canvas.draw()
+
+col0_right = axes[0, 0].get_position().x1
+col1_left = axes[0, 1].get_position().x0
+line_x = (col0_right + col1_left) / 2
+
+fig.add_artist(plt.Line2D([line_x, line_x], [0, 1], color='red', linewidth=4, transform=fig.transFigure))
 plt.savefig(cache.RESULTS_FOLDER / "mnist-transform-grid.png")
