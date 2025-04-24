@@ -98,3 +98,12 @@ def shuffle(*arrays, seed=0):
 
 def resize(x, shape):
     return tf.image.resize(x, shape[:2]).numpy()
+
+def pack_arrays(*arrays):
+    concatenated = np.concatenate(arrays)
+    lengths = [len(a) for a in arrays]
+    boundaries = np.cumsum(lengths)[:-1]
+    return concatenated, boundaries
+
+def unpack_arrays(concatenated, boundaries):
+    return tuple(np.split(concatenated, boundaries))

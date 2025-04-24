@@ -9,19 +9,6 @@ from code.utils import cache, latent, utils, models
 
 x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-digit_indices = np.array([
-    1333, # 0
-    9415, # 1
-    3773, # 2
-     524, # 3
-    1980, # 4
-    1874, # 5
-    4252, # 6
-    6960, # 7
-    8466, # 8
-    5333  # 9
-])
-
 autoencoder, _ = models.select_model(models.list_models(
     criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)}
 ))

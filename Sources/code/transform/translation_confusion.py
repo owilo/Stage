@@ -19,7 +19,13 @@ classifier, _ = models.select_model(models.list_models(
     criteria={"type": "classifier"}
 ))
 
-z_test = latent.encode(autoencoder, x_test, y_test, 3, save_cache=False)
+z_test = latent.encode(
+    autoencoder,
+    x_test,
+    y_test,
+    2,
+    save_cache=True
+)
 
 if autoencoder.decoder.requires_labels(): # CVAE
     z_class_distributions = None
