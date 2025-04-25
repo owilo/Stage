@@ -12,8 +12,8 @@ from code.utils import cache, latent, utils, models
 np.random.seed(42)
 tf.keras.utils.set_random_seed(42)
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train, x_test = utils.preprocess_dataset(x_train, x_test)
+(x_train, y_train), (_, _) = mnist.load_data()
+x_train, = utils.preprocess_dataset(x_train)
 
 autoencoder, _ = models.select_model(
     models.list_models(criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)})
@@ -27,54 +27,66 @@ z_train = latent.encode(
     save_cache=True
 )
 
-z_test = latent.encode(
-    autoencoder,
-    x=x_test,
-    y=y_test,
-    n_times=2,
-    save_cache=True
-)
+z_class_distributions = latent.class_distributions(z_train, y_train)
 
+z_mean = np.array([z_class_distributions[c][0] for c in sorted(z_class_distributions)])
+
+z_all, configuration = utils.pack_arrays(z_train, z_mean)
+
+tsne = TSNE(n_components=2, random_state=1337, perplexity=75)
+
+z_tsne = tsne.fit_transform(z_all)
 y_srcs = np.array([2, 4])
 
-classes = np.unique(y_train)
-latent_centroids = np.vstack([
-    z_train[y_train == cls].mean(axis=0)
-    for cls in classes
-])
+z_train_tsne, z_mean_tsne = utils.unpack_arrays(z_tsne, configuration)
 
-tsne = TSNE(n_components=2, random_state=1337, max_iter=300)
-all_embeddings = tsne.fit_transform(
-    np.vstack([z_test, latent_centroids])
-)
-
-z_tsne = all_embeddings[: len(z_test)]
-centroid_tsne = {
-    cls: all_embeddings[len(z_test) + i]
-    for i, cls in enumerate(classes)
-}
+unique_classes = np.unique(y_train)
+norm = Normalize(vmin=min(unique_classes), vmax=max(unique_classes))
+cmap = plt.cm.Paired
 
 plt.figure(figsize=(8, 8))
 plt.scatter(
-    z_tsne[:, 0],
-    z_tsne[:, 1],
-    c=y_test,
+    z_train_tsne[:, 0],
+    z_train_tsne[:, 1],
+    c=y_train,
     cmap="Paired",
     alpha=0.35,
     s=6
 )
 
-norm = Normalize(vmin=classes.min(), vmax=classes.max())
-cmap = plt.cm.Paired
+for class_label in unique_classes:
+    plt.scatter([], [], color=plt.cm.Paired(norm(class_label)), label=str(class_label))
 
-for cls in classes:
-    plt.scatter([], [], color=cmap(norm(cls)), label=str(cls))
+plt.scatter(
+    z_mean_tsne[:, 0], z_mean_tsne[:, 1],
+    color="black",
+    marker="x",
+    s=100,
+    label="Centroid"
+)
 
-desaturation_factor = 0.5
+plt.legend()
+plt.tight_layout()
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-centroids-tsne.png")
+
+plt.figure(figsize=(8, 8))
+plt.scatter(
+    z_train_tsne[:, 0],
+    z_train_tsne[:, 1],
+    c=y_train,
+    cmap="Paired",
+    alpha=0.35,
+    s=6
+)
+
+for class_label in unique_classes:
+    plt.scatter([], [], color=plt.cm.Paired(norm(class_label)), label=str(class_label))
+
+desaturation_factor = 0.55
 brightness_factor = 0.75
 
 for y_src in y_srcs:
-    src = centroid_tsne[y_src]
+    src = z_mean_tsne[y_src]
     base_rgba = cmap(norm(y_src))
     rgb = base_rgba[:3]
     hsv = matplotlib.colors.rgb_to_hsv(rgb)
@@ -82,7 +94,7 @@ for y_src in y_srcs:
     hsv[2] *= brightness_factor
     desat_rgb = matplotlib.colors.hsv_to_rgb(hsv)
     desat_rgba = (*desat_rgb, base_rgba[3])
-    for y_dst, dst in centroid_tsne.items():
+    for y_dst, dst in enumerate(z_mean_tsne):
         if y_src == y_dst:
             continue
         plt.arrow(
@@ -90,18 +102,18 @@ for y_src in y_srcs:
             dst[0] - src[0],
             dst[1] - src[1],
             color=desat_rgba,
-            width=0.05
+            width=0.5,
+            length_includes_head=True
         )
 
-for cls, centroid in centroid_tsne.items():
-    plt.scatter(
-        centroid[0], centroid[1],
-        color="black",
-        marker="x",
-        s=100,
-        label="Centroid" if cls == classes[0] else None
-    )
+plt.scatter(
+    z_mean_tsne[:, 0], z_mean_tsne[:, 1],
+    color="black",
+    marker="x",
+    s=100,
+    label="Centroid"
+)
 
 plt.legend()
 plt.tight_layout()
-plt.savefig(cache.RESULTS_FOLDER / "mnist-translation-vectors.png")
+plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-translation-vectors.png")

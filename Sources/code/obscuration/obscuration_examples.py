@@ -25,9 +25,9 @@ classifier, _ = models.select_model(models.list_models(
 # Inv translatés
 
 digit_indices = np.array([
-    620, # 0
-    3701, # 3
     9100, # 3
+    4576, # 4 
+    6271, # 4
 ])
 
 x_src = x_test[digit_indices]
@@ -113,7 +113,7 @@ plt.savefig(cache.RESULTS_FOLDER / f"mnist-obscuration-translation-examples-{key
 
 z_all, configuration = utils.pack_arrays(z_train, z_mean, z_src, z_dst, z_dst_alpha)
 
-tsne = TSNE(n_components=2, random_state=1337, perplexity=50)
+tsne = TSNE(n_components=2, random_state=1337, perplexity=75)
 
 z_tsne = tsne.fit_transform(z_all)
 
@@ -143,23 +143,23 @@ for i in range(len(z_src_tsne)):
     plt.plot(
         [z_src_tsne[i, 0], z_dst_tsne[i, 0]],
         [z_src_tsne[i, 1], z_dst_tsne[i, 1]],
-        linestyle='--', color='purple', linewidth=1, label="Translation" if i == 0 else None
+        linestyle='--', color='purple', linewidth=1.5, label="Translation" if i == 0 else None
     )
     
     plt.plot(
         [z_dst_tsne[i, 0], z_dst_alpha_tsne[i, 0]],
         [z_dst_tsne[i, 1], z_dst_alpha_tsne[i, 1]],
-        linestyle='--', color='magenta', linewidth=1, label="α perturbation" if i == 0 else None
+        linestyle='--', color='magenta', linewidth=1.5, label="α perturbation" if i == 0 else None
     )
 
     plt.arrow(
         z_src_tsne[i, 0], z_src_tsne[i, 1],
         z_dst_alpha_tsne[i, 0] - z_src_tsne[i, 0],
         z_dst_alpha_tsne[i, 1] - z_src_tsne[i, 1],
-        color='black', linewidth=1, head_width=2, head_length=2, length_includes_head=True, label="Perturbed translation" if i == 0 else None
+        color='black', linewidth=2, head_width=2, head_length=2, length_includes_head=True, label="Perturbed translation" if i == 0 else None
     )
 
 plt.title(f"t-SNE : Visualisation of the obscuration of various digits")
-plt.legend()
+plt.legend(loc="upper left")
 plt.tight_layout()
 plt.savefig(cache.RESULTS_FOLDER / "Projections" / "mnist-obscuration-translation-tsne.png")
