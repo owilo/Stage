@@ -81,13 +81,13 @@ def classify(x, classifier):
         return guessed[0], predictions[0], certainty[0]
     return guessed, predictions, certainty
 
-def preprocess_dataset(x_train, x_test):
-    x_train = x_train.astype("float32") / 255.
-    x_train = x_train.reshape(-1, 28, 28, 1)
-
-    x_test = x_test.astype("float32") / 255.
-    x_test = x_test.reshape(-1, 28, 28, 1)
-    return x_train, x_test
+def preprocess_dataset(*arrays):
+    processed_arrays = []
+    for array in arrays:
+        array = array.astype("float32") / 255.
+        array = array.reshape(-1, 28, 28, 1)
+        processed_arrays.append(array)
+    return tuple(processed_arrays)
 
 def shuffle(*arrays, seed=0):
     rng = np.random.default_rng(seed)
