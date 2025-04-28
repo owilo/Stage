@@ -13,17 +13,14 @@ class Encoder(tf.keras.Model):
         super(Encoder, self).__init__(**kwargs)
         self.latent_dim = latent_dim
         self.num_classes = num_classes
-        # convolutional feature extractor
         self.conv1 = layers.Conv2D(32, 3, strides=2, activation='relu', padding='same')
         self.conv2 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
         self.conv3 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
         self.flatten = layers.Flatten()
         self.dense = layers.Dense(256, activation='relu')
-        # VAE heads
         self.z_mean = layers.Dense(latent_dim, name='z_mean')
         self.z_log_var = layers.Dense(latent_dim, name='z_log_var')
         self.sampling = Sampling()
-        # classification head
         self.classifier = layers.Dense(num_classes, activation='softmax', name='y_pred')
 
     def call(self, x, training=False):
@@ -32,11 +29,9 @@ class Encoder(tf.keras.Model):
         x = self.conv3(x)
         x = self.flatten(x)
         x = self.dense(x)
-        # VAE outputs
         z_mean = self.z_mean(x)
         z_log_var = self.z_log_var(x)
         z = self.sampling((z_mean, z_log_var))
-        # classifier output
         y_pred = self.classifier(x)
         return z_mean, z_log_var, z, y_pred
 
@@ -93,10 +88,8 @@ class SCVAE(keras.Model):
         self.class_loss_weight = class_loss_weight
         self.final_beta = final_beta
         self.annealing_steps = annealing_steps
-        # replace encoder with classifier head
         self.encoder = Encoder(latent_dim=latent_dim, num_classes=num_classes)
         self.decoder = Decoder()
-        # metrics
         self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
         self.reconstruction_loss_tracker = keras.metrics.Mean(name="reconstruction_loss")
         self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
@@ -117,28 +110,23 @@ class SCVAE(keras.Model):
         x, y = data
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z, y_pred = self.encoder(x, training=True)
-            # reconstruction
             x_recon = self.decoder((z, y))
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
                     keras.losses.binary_crossentropy(x, x_recon), axis=(1, 2)
                 )
             )
-            # KL divergence
             step = tf.cast(self.optimizer.iterations, tf.float32)
             beta = self.final_beta * tf.minimum(1.0, step / self.annealing_steps)
             kl_loss = -0.5 * tf.reduce_mean(
                 tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
             ) * beta
-            # classification loss
             class_loss = tf.reduce_mean(keras.losses.categorical_crossentropy(y, y_pred))
-            # combined loss
             total_loss = reconstruction_loss + kl_loss + self.class_loss_weight * class_loss
 
         grads = tape.gradient(total_loss, self.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
 
-        # update metrics
         self.total_loss_tracker.update_state(total_loss)
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)
         self.kl_loss_tracker.update_state(kl_loss)
@@ -200,24 +188,17 @@ class SCVAE(keras.Model):
         })
         return config
 
-# Usage example omitted for brevity, follows same pattern as CVAE but instantiates SCVAE
-
-
-# alias for saving/loading consistency
 SCVAE.Encoder = Encoder
 SCVAE.Decoder = Decoder
 SCVAE.Sampling = Sampling
 
 if __name__ == "__main__":
-    # reproducibility
     np.random.seed(42)
     tf.keras.utils.set_random_seed(42)
 
-    # load & preprocess MNIST
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train, x_test = utils.preprocess_dataset(x_train, x_test)
 
-    # one-hot labels
     y_train = tf.one_hot(y_train, depth=10)
     y_test = tf.one_hot(y_test, depth=10)
 
@@ -232,7 +213,6 @@ if __name__ == "__main__":
     parser.add_argument("--name", type=str, default="scvae", help="model name")
     args = parser.parse_args()
 
-    # instantiate
     scvae = SCVAE(
         latent_dim=args.l,
         num_classes=10,
@@ -242,7 +222,6 @@ if __name__ == "__main__":
     )
     scvae.compile(optimizer=keras.optimizers.Adam())
 
-    # training split
     if args.ds < 1.0:
         x_tr, y_tr, _, _ = utils.split_dataset(x_train, y_train, args.ds)
         scvae.fit(
@@ -261,7 +240,6 @@ if __name__ == "__main__":
             validation_data=(x_test, y_test)
         )
 
-    # sanity-check forward pass
     dummy_x = np.random.rand(1, 28, 28, 1).astype("float32")
     dummy_y = tf.one_hot([3], depth=10)
     _ = scvae((dummy_x, dummy_y))

@@ -144,10 +144,6 @@ if __name__ == "__main__":
 
     x_dst = autoencoder.decoder.predict(z_dst)
 
-    # Les non-translatés restent inchangés (aucun encodage-décodage)
-    mask = (y_src == y_dst)
-    x_dst[mask] = x_src[mask]
-
     x_dst, y_src, y_dst = utils.shuffle(x_dst, y_src, y_dst)
 
     y_src_categorical = keras.utils.to_categorical(y_src, 10)

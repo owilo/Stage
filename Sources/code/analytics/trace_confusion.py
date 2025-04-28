@@ -6,7 +6,7 @@ import argparse
 
 from code.utils import cache, latent, utils, models, plots
 
-parser = argparse.ArgumentParser(description="Nom du fichier")
+parser = argparse.ArgumentParser(description="Matrices de confusion des traces dans la transformation")
 parser.add_argument("--name", type=str, help="Nom du fichier")
 parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
 parser.add_argument("--classifier", type=str, default=None, help="Nom du classifieur utilisé")
@@ -60,7 +60,7 @@ input_shape = tuple(autoencoder_definition["input_shape"])
 
 x_train_rr = utils.resize(x_train_rr, input_shape)
 
-x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.1, seed=None) # (1k inchangés - 9k obscurcis)
+x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.0, seed=None) # (1k inchangés - 9k obscurcis)
 
 x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 
@@ -68,7 +68,7 @@ z_src = latent.encode(
     autoencoder,
     x=x_src,
     y=y_src,
-    n_times=3,
+    n_times=2,
     save_cache=True
 )
 
