@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="BetaVAE")
     parser.add_argument("-l", type=int, default=128, help="Taille du vecteur latent")
-    parser.add_argument("-e", type=int, default=5, help="Nombre d'époques")
+    parser.add_argument("-e", type=int, default=50, help="Nombre d'époques")
     parser.add_argument("-b", type=int, default=32, help="Taille de batch")
     parser.add_argument("--ds", type=float, default=1.0, help="Taille du dataset (0 à 1), 1 inclut aussi le dataset de test")
     parser.add_argument("--beta", type=float, default=3.5, help="Coefficient β de pondération pour la régularisation")
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     model_definition = {
         "type": "autoencoder",
         "category": "CVAE",
-        "file": name,
+        "name": name,
         "input_shape": [28, 28, 1],
         "output_shape": [28, 28, 1],
         "latent_shape": [latent_dim],

@@ -19,7 +19,7 @@ img = img.astype('float32') / 255.0
 img = np.expand_dims(img, axis=-1)
 img_batch = np.expand_dims(img, axis=0)
 
-z_mean, z_log_var, z = cvae.encoder.predict(img_batch)
+z_mean, z_log_var, z = autoencoder.encoder.predict(img_batch)
 latent_vector = z_mean[0].copy()  # vecteur latent (style)
 latent_dim = latent_vector.shape[0]
 
@@ -41,7 +41,7 @@ ax_latent.set_xticks(np.arange(0, latent_dim, max(1, latent_dim // 10)))
 
 ax_img = fig.add_axes([0.55, 0.3, 0.4, 0.6])
 
-decoded_img = cvae.decoder.predict([
+decoded_img = autoencoder.decoder.predict([
     np.expand_dims(latent_vector, axis=0),
     np.expand_dims(current_label, axis=0)
 ])[0]
@@ -63,7 +63,7 @@ for label in check.labels:
 
 def update_image():
     global latent_vector, current_label
-    decoded = cvae.decoder.predict([
+    decoded = autoencoder.decoder.predict([
         np.expand_dims(latent_vector, axis=0),
         np.expand_dims(current_label, axis=0)
     ])[0]

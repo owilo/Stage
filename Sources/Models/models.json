@@ -415,5 +415,28 @@
             1
         ],
         "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "autoencoder",
+        "category": "SCVAE",
+        "name": "scvae",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            28,
+            28,
+            1
+        ],
+        "latent_shape": [
+            32
+        ],
+        "labels": true,
+        "dataset_range": [
+            0,
+            1.0
+        ]
     }
 ]
