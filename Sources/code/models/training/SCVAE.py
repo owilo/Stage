@@ -9,29 +9,39 @@ from code.utils import utils, models
 
 @tf.keras.utils.register_keras_serializable()
 class Encoder(tf.keras.Model):
-    def __init__(self, latent_dim=2, num_classes=10, **kwargs):
-        super(Encoder, self).__init__(**kwargs)
-        self.latent_dim = latent_dim
-        self.num_classes = num_classes
-        self.conv1 = layers.Conv2D(32, 3, strides=2, activation='relu', padding='same')
-        self.conv2 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
-        self.conv3 = layers.Conv2D(64, 3, strides=2, activation='relu', padding='same')
+    def __init__(self, latent_dim, num_classes, **kwargs):
+        super().__init__(**kwargs)
+        self.conv1 = layers.Conv2D(32, 3, strides=2, padding='same', activation=None)
+        self.act1  = layers.Activation('relu')
+
+        self.conv2 = layers.Conv2D(64, 3, strides=2, padding='same', activation=None)
+        self.act2  = layers.Activation('relu')
+
+        self.conv3 = layers.Conv2D(64, 3, strides=2, padding='same', activation=None)
+        self.act3  = layers.Activation('relu')
+
         self.flatten = layers.Flatten()
-        self.dense = layers.Dense(256, activation='relu')
-        self.z_mean = layers.Dense(latent_dim, name='z_mean')
+        self.dense   = layers.Dense(256, activation=None)
+        self.act4    = layers.Activation('relu')
+
+        self.z_mean    = layers.Dense(latent_dim, name='z_mean')
         self.z_log_var = layers.Dense(latent_dim, name='z_log_var')
-        self.sampling = Sampling()
+        self.sampling  = Sampling()
+
         self.classifier = layers.Dense(num_classes, activation='softmax', name='y_pred')
 
     def call(self, x, training=False):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
+        x = self.act1(self.conv1(x), training=training)
+        x = self.act2(self.conv2(x), training=training)
+        x = self.act3(self.conv3(x), training=training)
+
         x = self.flatten(x)
-        x = self.dense(x)
+        x = self.act4(self.dense(x), training=training)
+
         z_mean = self.z_mean(x)
         z_log_var = self.z_log_var(x)
         z = self.sampling((z_mean, z_log_var))
+
         y_pred = self.classifier(x)
         return z_mean, z_log_var, z, y_pred
 
@@ -46,24 +56,29 @@ class Encoder(tf.keras.Model):
 @tf.keras.utils.register_keras_serializable()
 class Decoder(tf.keras.Model):
     def __init__(self, **kwargs):
-        super(Decoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.concat = layers.Concatenate()
-        self.dense0 = layers.Dense(256, activation='relu')
-        self.dense = layers.Dense(7 * 7 * 64, activation='relu')
-        self.reshape = layers.Reshape((7, 7, 64))
-        self.deconv1 = layers.Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')
-        self.deconv2 = layers.Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')
-        self.conv_out = layers.Conv2D(1, 3, activation='sigmoid', padding='same')
+
+        self.d0 = layers.Dense(256, activation='relu')
+
+        self.d1 = layers.Dense(7*7*64, activation='relu')
+        self.reshape = layers.Reshape((7,7,64))
+
+        self.up1 = layers.UpSampling2D()
+        self.c1  = layers.Conv2D(64, 3, padding='same', activation='relu')
+
+        self.up2 = layers.UpSampling2D()
+        self.c2  = layers.Conv2D(32, 3, padding='same', activation='relu')
+
+        self.out = layers.Conv2D(1, 3, padding='same', activation='sigmoid')
 
     def call(self, inputs):
         z, y = inputs
         x = self.concat([z, y])
-        x = self.dense0(x)
-        x = self.dense(x)
-        x = self.reshape(x)
-        x = self.deconv1(x)
-        x = self.deconv2(x)
-        return self.conv_out(x)
+        x = self.reshape(self.d1(x))
+        x = self.c1(self.up1(x))
+        x = self.c2(self.up2(x))
+        return self.out(x)
 
     def get_config(self):
         return super(Decoder, self).get_config()
@@ -204,11 +219,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="SCVAE")
     parser.add_argument("-l", type=int, default=32, help="latent vector size")
-    parser.add_argument("-e", type=int, default=80, help="epochs")
-    parser.add_argument("-b", type=int, default=32, help="batch size")
+    parser.add_argument("-e", type=int, default=30, help="epochs")
+    parser.add_argument("-b", type=int, default=16, help="batch size")
     parser.add_argument("--ds", type=float, default=1.0, help="dataset fraction")
-    parser.add_argument("--beta", type=float, default=4.0, help="β weighting")
-    parser.add_argument("--ans", type=int, default=27500, help="annealing steps")
+    parser.add_argument("--beta", type=float, default=3, help="β weighting")
+    parser.add_argument("--ans", type=int, default=30000, help="annealing steps")
     parser.add_argument("--clw", type=float, default=1.0, help="class loss weight")
     parser.add_argument("--name", type=str, default="scvae", help="model name")
     args = parser.parse_args()
