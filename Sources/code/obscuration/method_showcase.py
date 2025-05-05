@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
+from skimage import metrics
 
 from code.utils import cache, latent, utils, models, obscuration
 
@@ -20,6 +21,10 @@ betavae, _ = models.select_model(models.list_models(
 
 cvae, _ = models.select_model(models.list_models(
     criteria={"type": "autoencoder", "category": "CVAE", "dataset_range": (0, 1)}
+))
+
+classifier, _ = models.select_model(models.list_models(
+    criteria={"type": "classifier"}
 ))
 
 digit = 1980
@@ -56,6 +61,27 @@ plt.imsave(
     x_src[0].squeeze(), cmap='gray'
 )
 
+results_file = cache.RESULTS_FOLDER / "ObscurationMethods" / "metrics.txt"
+with open(results_file, 'w') as f:
+    pass
+
+def save_with_metrics(image, name):
+    image = utils.resize(image, (28, 28))
+
+    plt.imsave(
+        cache.RESULTS_FOLDER / "ObscurationMethods" / f"{name}.png",
+        image.squeeze(), cmap='gray'
+    )
+
+    guessed, _, certainty = utils.classify(image, classifier)
+    psnr = metrics.peak_signal_noise_ratio(x_src[0].squeeze(), image.squeeze())
+    ssim = metrics.structural_similarity(x_src[0].squeeze(), image.squeeze(), data_range=1.0)
+
+    result_line = f"{name} | PSNR = {psnr:.3f} dB | SSIM = {ssim:.3f} | Classifier = ({guessed}, {certainty:.2f})\n"
+
+    with open(results_file, 'a') as f:
+        f.write(result_line)
+
 def obscuration_betavae(key, file_prefix="0"):
     # Forward
     utils.set_random_seed(key)
@@ -71,10 +97,7 @@ def obscuration_betavae(key, file_prefix="0"):
         z_src_alpha, y_src, y_dst, z_class_distributions, use_std=False
     )
     x_dst_alpha = betavae.decoder.predict(z_dst_alpha)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_betaVAE_forward{file_prefix}.png",
-        utils.resize(x_dst_alpha[0], (28, 28)).squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_dst_alpha[0], f"obs_betaVAE_forward{file_prefix}")
 
     # Backward
     _, _, z_inv_dst_alpha = betavae.encoder.predict(x_dst_alpha)
@@ -85,10 +108,7 @@ def obscuration_betavae(key, file_prefix="0"):
 
     x_inv_src = betavae.decoder.predict(z_inv_src)
 
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_betaVAE_inverse{file_prefix}.png",
-        utils.resize(x_inv_src[0], (28, 28)).squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_inv_src[0], f"obs_betaVAE_inverse{file_prefix}")
 
 def obscuration_cvae(key, file_prefix="0"):
     # Forward
@@ -99,10 +119,7 @@ def obscuration_cvae(key, file_prefix="0"):
     z_dst = latent.style_class_transform(z_src_cvae, y_dst, num_classes=10)
     x_dst = cvae.decoder.predict(z_dst)
 
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_cvae_forward{file_prefix}.png",
-        x_dst[0].squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_dst[0], f"obs_cvae_forward{file_prefix}")
 
     # Backward
     _, _, z_inv_dst = cvae.encoder.predict(x_dst)
@@ -110,18 +127,12 @@ def obscuration_cvae(key, file_prefix="0"):
     z_inv_src = latent.style_class_transform(z_inv_dst, y_src, num_classes=10)
     x_inv_src = cvae.decoder.predict(z_inv_src)
 
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_cvae_inverse{file_prefix}.png",
-        x_inv_src[0].squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_inv_src[0], f"obs_cvae_inverse{file_prefix}")
 
 def blur(sigma, file_prefix="0"):
     # Forward
     x_blur = gaussian_filter(x_src[0], sigma=sigma)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_blur_forward{file_prefix}.png",
-        x_blur.squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_blur, f"obs_blur_forward{file_prefix}")
     return x_blur
 
 def selective_encryption(affected_bits, key, file_prefix="0"):
@@ -139,11 +150,8 @@ def selective_encryption(affected_bits, key, file_prefix="0"):
     enc_plane = np.frombuffer(enc_flat, dtype=np.uint8).reshape(bit_plane.shape)
     x_enc_uint = (x_uint & (~mask)) | (enc_plane & mask)
     x_enc = (x_enc_uint.astype(np.float32) / 255.0).reshape(x_src[0].shape)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods"
-        / f"obs_selective_encryption_forward{file_prefix}.png",
-        x_enc.squeeze(), cmap='gray'
-    )
+    
+    save_with_metrics(x_enc, f"obs_selective_encryption_forward{file_prefix}")
 
     # Backward
     ctr = Counter.new(128, initial_value=0)
@@ -154,26 +162,16 @@ def selective_encryption(affected_bits, key, file_prefix="0"):
     dec_plane = np.frombuffer(dec_flat, dtype=np.uint8).reshape(bit_plane.shape)
     x_dec_uint = (x_enc_uint & (~mask)) | (dec_plane & mask)
     x_dec = (x_dec_uint.astype(np.float32) / 255.0).reshape(x_src[0].shape)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods"
-        / f"obs_selective_encryption_inverse{file_prefix}.png",
-        x_dec.squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_dec, f"obs_selective_encryption_inverse{file_prefix}")
 
 def bit_flip(block_size, key, file_prefix="0"):
     # Forward
     x_flip = obscuration.bit_flip(x_src[0], block_size=block_size, seed=key)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_bit_flip_forward{file_prefix}.png",
-        x_flip.squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_flip, f"obs_bit_flip_forward{file_prefix}")
 
     # Backward
     x_inv_flip = obscuration.bit_flip(x_flip, block_size=block_size, seed=key)
-    plt.imsave(
-        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_bit_flip_inverse{file_prefix}.png",
-        x_inv_flip.squeeze(), cmap='gray'
-    )
+    save_with_metrics(x_inv_flip, f"obs_bit_flip_inverse{file_prefix}")
 
 obscuration_betavae(key=1, file_prefix="0")
 obscuration_betavae(key=3, file_prefix="1")
