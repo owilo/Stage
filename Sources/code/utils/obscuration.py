@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
@@ -53,3 +54,16 @@ def bit_flip(img, block_size, seed=0):
             out[top : top + bh, left : left + bw] = sub ^ mask
 
     return out.astype(np.float32) / 255.0
+
+"""def fgsm_attack(image, label, model, epsilon):
+    with tf.GradientTape() as tape:
+        tape.watch(image)
+        prediction = model(image)
+        loss = tf.keras.losses.sparse_categorical_crossentropy(label, prediction)
+    
+    gradient = tape.gradient(loss, image)
+    signed_grad = tf.sign(gradient)
+    
+    adv_image = image + epsilon * signed_grad
+    adv_image = tf.clip_by_value(adv_image, 0, 1)
+    return adv_image"""
