@@ -5,7 +5,7 @@ from scipy.ndimage import gaussian_filter
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
-from code.utils import cache, latent, utils, models
+from code.utils import cache, latent, utils, models, obscuration
 
 utils.deterministic()
 utils.set_random_seed(42)
@@ -73,7 +73,7 @@ def obscuration_betavae(key, file_prefix="0"):
     x_dst_alpha = betavae.decoder.predict(z_dst_alpha)
     plt.imsave(
         cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_betaVAE_forward{file_prefix}.png",
-        x_dst_alpha[0].squeeze(), cmap='gray'
+        utils.resize(x_dst_alpha[0], (28, 28)).squeeze(), cmap='gray'
     )
 
     # Backward
@@ -87,7 +87,7 @@ def obscuration_betavae(key, file_prefix="0"):
 
     plt.imsave(
         cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_betaVAE_inverse{file_prefix}.png",
-        x_inv_src[0].squeeze(), cmap='gray'
+        utils.resize(x_inv_src[0], (28, 28)).squeeze(), cmap='gray'
     )
 
 def obscuration_cvae(key, file_prefix="0"):
@@ -160,6 +160,21 @@ def selective_encryption(affected_bits, key, file_prefix="0"):
         x_dec.squeeze(), cmap='gray'
     )
 
+def bit_flip(block_size, key, file_prefix="0"):
+    # Forward
+    x_flip = obscuration.bit_flip(x_src[0], block_size=block_size, seed=key)
+    plt.imsave(
+        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_bit_flip_forward{file_prefix}.png",
+        x_flip.squeeze(), cmap='gray'
+    )
+
+    # Backward
+    x_inv_flip = obscuration.bit_flip(x_flip, block_size=block_size, seed=key)
+    plt.imsave(
+        cache.RESULTS_FOLDER / "ObscurationMethods" / f"obs_bit_flip_inverse{file_prefix}.png",
+        x_inv_flip.squeeze(), cmap='gray'
+    )
+
 obscuration_betavae(key=1, file_prefix="0")
 obscuration_betavae(key=3, file_prefix="1")
 
@@ -171,3 +186,6 @@ blur(sigma=4, file_prefix="1")
 
 selective_encryption(0b00111111, key=b"0123456789abcdef", file_prefix="0")
 selective_encryption(0b11100000, key=b"0123456789abcdef", file_prefix="1")
+
+bit_flip(block_size=4, key=1, file_prefix="0")
+bit_flip(block_size=8, key=1, file_prefix="1")
