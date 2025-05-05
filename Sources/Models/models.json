@@ -372,13 +372,13 @@
         "category": "BranchVAE",
         "name": "branchvae",
         "input_shape": [
-            64,
-            64,
+            28,
+            28,
             1
         ],
         "output_shape": [
-            64,
-            64,
+            28,
+            28,
             1
         ],
         "latent_shape": [
@@ -394,29 +394,6 @@
         "type": "autoencoder",
         "category": "BranchVAE",
         "name": "branchvae_gmm",
-        "input_shape": [
-            28,
-            28,
-            1
-        ],
-        "output_shape": [
-            28,
-            28,
-            1
-        ],
-        "latent_shape": [
-            16
-        ],
-        "labels": false,
-        "dataset_range": [
-            0,
-            1.0
-        ]
-    },
-    {
-        "type": "autoencoder",
-        "category": "BranchVAE",
-        "name": "branchvae",
         "input_shape": [
             28,
             28,

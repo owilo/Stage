@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 
@@ -107,3 +108,22 @@ def pack_arrays(*arrays):
 
 def unpack_arrays(concatenated, boundaries):
     return tuple(np.split(concatenated, boundaries))
+
+def deterministic(value=True):
+    if value:
+        os.environ['PYTHONHASHSEED'] = '0'
+        os.environ['TF_DETERMINISTIC_OPS'] = '1'
+        os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+        os.environ['TF_NUM_INTEROP_THREADS'] = '1'
+        os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
+    else:
+        os.environ.pop('PYTHONHASHSEED', None)
+        os.environ.pop('TF_DETERMINISTIC_OPS', None)
+        os.environ.pop('TF_CUDNN_DETERMINISTIC', None)
+        os.environ.pop('TF_NUM_INTEROP_THREADS', None)
+        os.environ.pop('TF_NUM_INTRAOP_THREADS', None)
+
+def set_random_seed(seed):    
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+    tf.keras.utils.set_random_seed(seed)

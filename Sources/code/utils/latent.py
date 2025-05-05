@@ -12,7 +12,7 @@ def autoencoder_dependant_decode(autoencoder, zp, yp):
     else:
         return autoencoder.decoder.predict(zp)
 
-def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, verbose=None):
+def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, verbose=None, num_classes=None):
     """
     Applique alternativement l'encodage et le décodage n_times fois pour obtenir le résultat final encodé.
     """
@@ -22,7 +22,7 @@ def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, ve
     key = cache.model_hash(autoencoder) + cache.data_hash(x) + cache.data_hash(y) + str(n_times) + str(int(return_dist))
 
     if autoencoder.decoder.requires_labels():
-        y = tf.keras.utils.to_categorical(y)
+        y = tf.keras.utils.to_categorical(y, num_classes=num_classes)
 
     def _encode():
         if n_times < 1:
@@ -39,7 +39,7 @@ def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, ve
     return cache.load_from_cache(key, _encode, save_cache, verbose)
 
 
-def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None):
+def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None, num_classes=None):
     """
     Applique alternativement le décodage et l'encodage n_times fois pour obtenir le résultat final décodé.
     """
@@ -49,7 +49,7 @@ def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None):
     key = cache.model_hash(autoencoder) + cache.data_hash(z) + cache.data_hash(y) + str(n_times)
 
     if autoencoder.decoder.requires_labels():
-        y = tf.keras.utils.to_categorical(y)
+        y = tf.keras.utils.to_categorical(y, num_classes=None)
 
     def _decode():
         if n_times < 1:
