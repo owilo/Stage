@@ -53,7 +53,7 @@ key = 0
 np.random.seed(key)
 tf.keras.utils.set_random_seed(key)
 
-u = np.random.randint(0, 9, 10)
+u = np.random.randint(0, 10, 10)
 y_dst = (u + y_src) % 10
 
 z_train = latent.encode(

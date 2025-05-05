@@ -1,6 +1,26 @@
 import numpy as np
+from Crypto.Cipher import AES
+from Crypto.Util import Counter
 
-import numpy as np
+def selective_encryption(img, affected_bits, key, decrypt=False):
+    mask = np.uint8(affected_bits)
+    x_uint = (img * 255).astype(np.uint8)
+
+    ctr = Counter.new(128, initial_value=0)
+    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+
+    plane = x_uint & mask
+    flat = plane.flatten().tobytes()
+
+    if not decrypt:
+        processed_flat = cipher.encrypt(flat)
+    else:
+        processed_flat = cipher.decrypt(flat)
+
+    proc_plane = np.frombuffer(processed_flat, dtype=np.uint8).reshape(plane.shape)
+    x_proc_uint = (x_uint & (~mask)) | (proc_plane & mask)
+    x_proc = x_proc_uint.astype(np.float32) / 255.0
+    return x_proc
 
 def bit_flip(img, block_size, seed=0):
     arr = (img * 255).astype(np.uint8)

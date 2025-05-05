@@ -2,8 +2,6 @@ import numpy as np
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
 from skimage import metrics
 
 from code.utils import cache, latent, utils, models, obscuration
@@ -85,7 +83,7 @@ def save_with_metrics(image, name):
 def obscuration_betavae(key, file_prefix="0"):
     # Forward
     utils.set_random_seed(key)
-    u = np.random.randint(0, 9, 1)
+    u = np.random.randint(0, 10, 1)
     y_dst = (u + y_src) % 10
 
     z_std = np.array([z_class_distributions[c][1] for c in sorted(z_class_distributions)])
@@ -113,7 +111,7 @@ def obscuration_betavae(key, file_prefix="0"):
 def obscuration_cvae(key, file_prefix="0"):
     # Forward
     utils.set_random_seed(key)
-    u = np.random.randint(0, 9, 1)
+    u = np.random.randint(0, 10, 1)
     y_dst = (u + y_src) % 10
 
     z_dst = latent.style_class_transform(z_src_cvae, y_dst, num_classes=10)
@@ -133,36 +131,16 @@ def blur(sigma, file_prefix="0"):
     # Forward
     x_blur = gaussian_filter(x_src[0], sigma=sigma)
     save_with_metrics(x_blur, f"obs_blur_forward{file_prefix}")
-    return x_blur
 
 def selective_encryption(affected_bits, key, file_prefix="0"):
     # Forward
-    mask = np.uint8(affected_bits)
-
-    ctr = Counter.new(128, initial_value=0)
-    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
-    
-    x_uint = (x_src[0] * 255).astype(np.uint8)
-    bit_plane = x_uint & mask
-    flat = bit_plane.flatten().tobytes()
-
-    enc_flat = cipher.encrypt(flat)
-    enc_plane = np.frombuffer(enc_flat, dtype=np.uint8).reshape(bit_plane.shape)
-    x_enc_uint = (x_uint & (~mask)) | (enc_plane & mask)
-    x_enc = (x_enc_uint.astype(np.float32) / 255.0).reshape(x_src[0].shape)
-    
+    x_enc = obscuration.selective_encryption(x_src[0], affected_bits, key, decrypt=False)
     save_with_metrics(x_enc, f"obs_selective_encryption_forward{file_prefix}")
 
     # Backward
-    ctr = Counter.new(128, initial_value=0)
-    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
-
-    enc_plane_flat = ((x_enc_uint & mask).flatten()).tobytes()
-    dec_flat = cipher.decrypt(enc_plane_flat)
-    dec_plane = np.frombuffer(dec_flat, dtype=np.uint8).reshape(bit_plane.shape)
-    x_dec_uint = (x_enc_uint & (~mask)) | (dec_plane & mask)
-    x_dec = (x_dec_uint.astype(np.float32) / 255.0).reshape(x_src[0].shape)
+    x_dec = obscuration.selective_encryption(x_enc, affected_bits, key, decrypt=True)
     save_with_metrics(x_dec, f"obs_selective_encryption_inverse{file_prefix}")
+
 
 def bit_flip(block_size, key, file_prefix="0"):
     # Forward
