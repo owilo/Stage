@@ -154,17 +154,24 @@ def bit_flip(block_size, key, file_prefix="0"):
     x_inv_flip = obscuration.bit_flip(x_flip, block_size=block_size, seed=key)
     save_with_metrics(x_inv_flip, f"obs_bit_flip_inverse{file_prefix}")
 
-def fgsm(file_prefix="0"):
+def fgsm(eps, file_prefix="0"):
     # Forward
-    x_poisoned = fast_gradient_method(model_fn=classifier, x=x_src, eps=0.35, norm=np.inf, y=tf.cast(y_src, tf.int32), targeted=False)
+    x_poisoned = fast_gradient_method(
+        model_fn=classifier,
+        x=x_src,
+        eps=eps,
+        norm=np.inf,
+        y=tf.cast(y_src, tf.int32),
+        targeted=False
+    )
     save_with_metrics(x_poisoned[0], f"obs_fgsm_forward{file_prefix}")
 
-def pgd(file_prefix="0"):
+def pgd(eps, file_prefix="0"):
     # Forward
     x_poisoned = projected_gradient_descent(
         model_fn=classifier,
         x=x_src,
-        eps=0.08,
+        eps=eps,
         eps_iter=0.01,
         nb_iter=40,
         norm=np.inf,
@@ -183,13 +190,13 @@ blur(sigma=2, file_prefix="0")
 blur(sigma=4, file_prefix="1")
 
 selective_encryption(0b00111111, key=b"0123456789abcdef", file_prefix="0")
-selective_encryption(0b11100000, key=b"0123456789abcdef", file_prefix="1")
+selective_encryption(0b11000000, key=b"0123456789abcdef", file_prefix="1")
 
-bit_flip(block_size=4, key=1, file_prefix="0")
-bit_flip(block_size=8, key=1, file_prefix="1")
+bit_flip(block_size=3, key=1, file_prefix="0")
+bit_flip(block_size=6, key=1, file_prefix="1")
 
-fgsm(file_prefix="0")
-fgsm(file_prefix="1")
+fgsm(eps=0.35, file_prefix="0")
+fgsm(eps=0.55, file_prefix="1")
 
-pgd(file_prefix="0")
-pgd(file_prefix="1")
+pgd(eps=0.08, file_prefix="0")
+pgd(eps=0.46, file_prefix="1")
