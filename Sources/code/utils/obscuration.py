@@ -1,5 +1,6 @@
 import numpy as np
-import tensorflow as tf
+from skimage.restoration import richardson_lucy
+
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
@@ -54,6 +55,15 @@ def bit_flip(img, block_size, seed=0):
             out[top : top + bh, left : left + bw] = sub ^ mask
 
     return out.astype(np.float32) / 255.0
+
+def gaussian_unblur(img, sigma):
+    def _gaussian_psf(size, sigma):
+        ax = np.arange(-size // 2 + 1., size // 2 + 1.)
+        xx, yy = np.meshgrid(ax, ax)
+        kernel = np.exp(-(xx**2 + yy**2) / (2. * sigma**2))
+        return kernel / np.sum(kernel)
+    
+    return richardson_lucy(img, _gaussian_psf(int(6 * sigma) | 1, sigma))
 
 """def fgsm_attack(image, label, model, epsilon):
     with tf.GradientTape() as tape:

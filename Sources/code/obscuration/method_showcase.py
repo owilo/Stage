@@ -131,9 +131,11 @@ def obscuration_cvae(key, file_prefix="0"):
     save_with_metrics(x_inv_src[0], f"obs_cvae_inverse{file_prefix}")
 
 def blur(sigma, file_prefix="0"):
-    # Forward
-    x_blur = gaussian_filter(x_src[0], sigma=sigma)
-    save_with_metrics(x_blur, f"obs_blur_forward{file_prefix}")
+    x_blur = gaussian_filter(x_src[0, ..., 0], sigma=sigma)
+    save_with_metrics(x_blur[..., np.newaxis], f"obs_blur_forward{file_prefix}")
+
+    x_unblur = obscuration.gaussian_unblur(x_blur, sigma)
+    save_with_metrics(x_unblur[..., np.newaxis], f"obs_blur_inverse{file_prefix}")
 
 def selective_encryption(affected_bits, key, file_prefix="0"):
     # Forward
