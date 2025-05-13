@@ -14,12 +14,14 @@ parser.add_argument("--tdetector", type=str, default=None, help="Nom du détecte
 parser.add_argument("--tclassifier", type=str, default=None, help="Nom du classifieur de traces utilisé")
 parser.add_argument("-a", action='store_true', help="Inclusion de la perturbation")
 parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
+parser.add_argument("--encode", action='store_true', help="Encoder et décoder les images non transformées")
 args = parser.parse_args()
 
 default_autoencoder = args.autoencoder
 default_classifier = args.classifier
 default_trace_detector = args.tdetector
 default_trace_classifier = args.tclassifier
+encode = args.encode
 use_alpha = args.a
 transform_method = args.t
 if transform_method not in list(range(3)):
@@ -61,6 +63,14 @@ input_shape = tuple(autoencoder_definition["input_shape"])
 x_train_rr = utils.resize(x_train_rr, input_shape)
 
 x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.5, seed=None) # (1k inchangés - 9k obscurcis)
+
+if encode:
+    z_ori = latent.encode(
+        autoencoder,
+        x=x_ori,
+        y=y_ori,
+    )
+    x_ori = autoencoder.decoder.predict(z_ori)
 
 x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 
