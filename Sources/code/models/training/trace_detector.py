@@ -61,6 +61,7 @@ if __name__ == "__main__":
     parser.add_argument("--autoencoder", type=str, default=None, help="Nom de l'autoencodeur utilisé")
     parser.add_argument("-a", action='store_true', help="Inclusion de la perturbation")
     parser.add_argument("-t", type=int, default=0, help="Méthode (0 : translation, 1 : translation + normalisation, 2 : transformation)")
+    parser.add_argument("--encode", action='store_true', help="Encoder et décoder les images non transformées")
 
     args = parser.parse_args()
 
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     default_autoencoder = args.autoencoder
     use_alpha = args.a
     transform_method = args.t
+    encode = args.encode
     if transform_method not in list(range(3)):
         raise ValueError("Méthode de transformation invalide. Choisissez 0, 1 ou 2.")
 
@@ -99,6 +101,14 @@ if __name__ == "__main__":
     x_train_rl = utils.resize(x_train_rl, input_shape)
 
     x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rl, y_train_rl, 0.5, seed=None)
+
+    if encode:
+        z_ori = latent.encode(
+            autoencoder,
+            x=x_ori,
+            y=y_ori,
+        )
+        x_ori = autoencoder.decoder.predict(z_ori)
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 

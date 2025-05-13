@@ -60,7 +60,7 @@ input_shape = tuple(autoencoder_definition["input_shape"])
 
 x_train_rr = utils.resize(x_train_rr, input_shape)
 
-x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.0, seed=None) # (1k inchangés - 9k obscurcis)
+x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.5, seed=None) # (1k inchangés - 9k obscurcis)
 
 x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 
@@ -205,6 +205,28 @@ plots.compute_confusion_matrix(
     FOLDER / f"detect-{model_type}-i-j.png",
     f"Détection de la translation (i → j)"    
 )
+
+# Détection de traces avec le classifieur standard
+guessed, _, certainties = utils.classify(x_dst, classifier)
+cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+plots.compute_confusion_matrix(
+    cm,
+    certainties,
+    np.arange(10),
+    FOLDER / f"classif-trace-{model_type}-i-j.png",
+    f"Classification (i → j)"
+)
+
+if transform_method == 2:
+    guessed, _, certainties = latent.classify_mg(z_dst, z_train_l, y_train_l)
+    cm = confusion_matrix(y_src, guessed, labels=np.arange(10))
+    plots.compute_confusion_matrix(
+        cm,
+        certainties,
+        np.arange(10),
+        FOLDER / f"classif-trace-{model_type}-i-j-mg.png",
+        f"Classification QDA (i → j)"
+    )
 
 ## Translation inverse
 

@@ -412,5 +412,41 @@
             0,
             1.0
         ]
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "name": "trace-detector-betavae128-d",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            1
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "name": "trace-detector-betavae128-mt-d",
+        "input_shape": [
+            64,
+            64,
+            1
+        ],
+        "output_shape": [
+            1
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "BetaVAE"
     }
 ]
