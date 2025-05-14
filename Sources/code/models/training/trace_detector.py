@@ -108,7 +108,12 @@ if __name__ == "__main__":
             x=x_ori,
             y=y_ori,
         )
-        x_ori = autoencoder.decoder.predict(z_ori)
+        x_ori = latent.decode(
+            autoencoder,
+            z=z_ori,
+            y=y_ori,
+            num_classes=10,
+        )
 
     x_src, y_src, y_dst = utils.split_src_to_dst(x_src, y_src)
 

@@ -12,4 +12,7 @@ fi
 # python -m code.models.training.trace_detector --name trace-detector-betavae128-mt-alpha --autoencoder h-betavae128 -e 20 -t 2 -a
 
 # python -m code.models.training.trace_detector --name trace-detector-betavae128-d --autoencoder h-betavae128 -e 20 -t 1 --encode
-python -m code.models.training.trace_detector --name trace-detector-betavae128-mt-d --autoencoder h-betavae128 -e 20 -t 2 --encode
+# python -m code.models.training.trace_detector --name trace-detector-betavae128-mt-d --autoencoder h-betavae128 -e 20 -t 2 --encode
+
+# python -m code.models.training.trace_detector --name trace-detector-cvae128 --autoencoder h-cvae128 -e 20
+python -m code.models.training.trace_detector --name trace-detector-cvae128-d --autoencoder h-cvae128 -e 20 --encode

@@ -6,7 +6,7 @@ import ot
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-def autoencoder_dependant_decode(autoencoder, zp, yp):
+def autoencoder_dependent_decode(autoencoder, zp, yp):
     if autoencoder.decoder.requires_labels():
         return autoencoder.decoder.predict((zp, yp))
     else:
@@ -29,7 +29,7 @@ def encode(autoencoder, x, y, n_times=1, save_cache=False, return_dist=False, ve
             raise ValueError("n_times doit être supérieur ou égal à 1")
         mean, log_var, r = autoencoder.encoder.predict(x) # todo
         for _ in range(1, n_times):
-            r = autoencoder_dependant_decode(autoencoder, r, y)
+            r = autoencoder_dependent_decode(autoencoder, r, y)
             mean, log_var, r = autoencoder.encoder.predict(r)
         if return_dist:
             return mean, log_var, r
@@ -54,10 +54,10 @@ def decode(autoencoder, z, y, n_times=1, save_cache=False, verbose=None, num_cla
     def _decode():
         if n_times < 1:
             raise ValueError("n_times doit être supérieur ou égal à 1")
-        r = autoencoder_dependant_decode(z, y)
+        r = autoencoder_dependent_decode(autoencoder, z, y)
         for _ in range(1, n_times):
             _, _, r = autoencoder.encoder.predict(r) #todo
-            r = autoencoder_dependant_decode(autoencoder, r, y)
+            r = autoencoder_dependent_decode(autoencoder, r, y)
         return r
 
     return cache.load_from_cache(key, _decode, save_cache, verbose)

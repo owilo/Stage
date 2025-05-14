@@ -448,5 +448,59 @@
             1
         ],
         "autoencoder": "BetaVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "name": "trace-detector-cvae128",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            1
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "CVAE"
+    },
+    {
+        "type": "trace_detector",
+        "category": "Classifier",
+        "name": "trace-detector-cvae128-d",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            1
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "CVAE"
+    },
+    {
+        "type": "trace_classifier",
+        "category": "Classifier",
+        "name": "trace-classifier-cvae128",
+        "input_shape": [
+            28,
+            28,
+            1
+        ],
+        "output_shape": [
+            10
+        ],
+        "dataset_range": [
+            0.5,
+            1
+        ],
+        "autoencoder": "CVAE"
     }
 ]
