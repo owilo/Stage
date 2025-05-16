@@ -62,7 +62,7 @@ input_shape = tuple(autoencoder_definition["input_shape"])
 
 x_train_rr = utils.resize(x_train_rr, input_shape)
 
-x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.5, seed=None) # (1k inchangés - 9k obscurcis)
+x_ori, y_ori, x_src, y_src = utils.split_dataset(x_train_rr, y_train_rr, 0.0, seed=None) # (1k inchangés - 9k obscurcis)
 
 if encode:
     z_ori = latent.encode(
