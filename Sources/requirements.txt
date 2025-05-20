@@ -11,3 +11,4 @@ scikit-image==0.25.2
 tensorflow==2.19.0
 umap_learn==0.5.7
 xxhash==3.5.0
+# TODO mettre à jour
