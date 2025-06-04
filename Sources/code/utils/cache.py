@@ -16,6 +16,7 @@ CACHE_FOLDER = get_env_folder("CACHE_PATH")
 MODEL_FOLDER = get_env_folder("MODEL_PATH")
 RESULTS_FOLDER = get_env_folder("RESULTS_PATH")
 IMAGES_FOLDER = get_env_folder("IMAGES_PATH")
+DATASETS_FOLDER = get_env_folder("DATASETS_PATH")
 
 def load_from_cache(data_id, supplier, save_cache=True, verbose=False):
     hash_str = xxhash.xxh128_hexdigest(data_id)

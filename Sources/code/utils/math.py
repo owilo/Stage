@@ -2,7 +2,6 @@ import numpy as np
 from scipy.stats import norm, multivariate_normal
 from scipy.optimize import brentq
 
-
 def ros_transform(z, pis, mus, covs):
     # rosenblatt transform
     K, d = mus.shape
