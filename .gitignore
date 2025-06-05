@@ -3,5 +3,12 @@
 !**/Cache/.gitkeep
 **/__pycache__
 
+# Datasets
+**/Datasets/*
+!**/Datasets/.gitkeep
+
 # Fichiers HTML
 **/Bokeh/**.html
+
+# Autres
+Sources/runs/**
