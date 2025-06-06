@@ -1,94 +1,66 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["TF_XLA_FLAGS"] = "--tf_xla_enable_xla_devices=false"
 import random
 import cv2
 import numpy as np
 from ultralytics import YOLO
 from tensorflow.keras.datasets import mnist
-from code.utils import cache
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import matplotlib.cm as cm
 import matplotlib.patheffects as path_effects
+from PIL import Image
 
-IMAGE_SIZE = 128
-GRID_SIZE = 8
-NUM_CLASSES = 10
+from code.utils import cache, utils, latent, models
 
-def create_mnist_yolo_dataset(
-    num_images=10000,
-    image_size=IMAGE_SIZE,
-    max_digits=5,
-    seed=42
-):
-    (x_mnist, y_mnist), _ = mnist.load_data()
-    x_mnist = x_mnist.astype(np.float32) / 255.0
+utils.deterministic()
+utils.set_random_seed(42)
 
-    images = np.zeros((num_images, image_size, image_size), dtype=np.float32)
-    raw_annotations = []
+(x_mnist, y_mnist), _ = mnist.load_data()
+x_mnist, = utils.preprocess_dataset(x_mnist)
 
-    rng = np.random.default_rng(seed)
+autoencoder, _ = models.select_model(models.list_models(
+    criteria={"type": "autoencoder", "labels": False, "dataset_range": (0, 1)}
+))
 
-    for i in range(num_images):
-        canvas = np.zeros((image_size, image_size), dtype=np.float32)
-        bboxes = []
-        n_digits = rng.integers(1, max_digits + 1)
+z_mnist = latent.encode(
+    autoencoder,
+    x=x_mnist,
+    y=y_mnist,
+    n_times=2,
+    save_cache=True
+)
 
-        for _ in range(n_digits):
-            idx = rng.integers(0, x_mnist.shape[0])
-            digit_img = x_mnist[idx]  # 28×28
-            label = int(y_mnist[idx])
+key = 0
+utils.set_random_seed(key)
 
-            digit_resized = cv2.resize(digit_img, (28, 28))  # still 28×28
+def digit_transform(x_src: Image.Image, y_src: int) -> Image.Image:
+    x_src = np.array(x_src)
+    x_src = x_src.reshape((1, 28, 28, 1))
+    z_src = latent.encode(
+        autoencoder,
+        x=x_src,
+        y=y_src,
+        n_times=2,
+        save_cache=False
+    )
 
-            x_min = int(rng.integers(0, image_size - 28))
-            y_min = int(rng.integers(0, image_size - 28))
+    u = np.random.randint(0, 10)
+    y_dst = (u + y_src) % 10
+    z_dst = latent.transform_mg(z_src, y_src, y_dst, z_mnist, y_mnist)
+    z_dst = np.expand_dims(z_dst, axis=0)
 
-            sub = canvas[y_min : y_min + 28, x_min : x_min + 28]
-            canvas[y_min : y_min + 28, x_min : x_min + 28] = np.maximum(sub, digit_resized)
+    x_dst = autoencoder.decoder.predict(z_dst)
 
-            x_center = (x_min + 28 / 2) / image_size
-            y_center = (y_min + 28 / 2) / image_size
-            w_norm = 28 / image_size
-            h_norm = 28 / image_size
-
-            bboxes.append([label, x_center, y_center, w_norm, h_norm])
-
-        images[i] = canvas
-        raw_annotations.append(bboxes)
-
-    return images, raw_annotations
-
-def write_yolo_dataset(
-    images: np.ndarray,
-    raw_annotations: list,
-    out_dir: str,
-    split: str
-):
-    img_dir = os.path.join(out_dir, split, "images")
-    lbl_dir = os.path.join(out_dir, split, "labels")
-    os.makedirs(img_dir, exist_ok=True)
-    os.makedirs(lbl_dir, exist_ok=True)
-
-    N = images.shape[0]
-    for idx in range(N):
-        img_array = (images[idx] * 255).astype(np.uint8)
-        img_bgr = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
-        filename_base = f"{split}_{idx:05d}"
-        img_path = os.path.join(img_dir, filename_base + ".png")
-        cv2.imwrite(img_path, img_bgr)
-
-        label_lines = []
-        for (cls_id, x_c, y_c, w_n, h_n) in raw_annotations[idx]:
-            label_lines.append(f"{cls_id} {x_c:.6f} {y_c:.6f} {w_n:.6f} {h_n:.6f}")
-        lbl_path = os.path.join(lbl_dir, filename_base + ".txt")
-        with open(lbl_path, "w") as f:
-            f.write("\n".join(label_lines))
+    img_array = x_dst[0, :, :, 0]
+    img_array = (img_array * 255).clip(0, 255).astype(np.uint8)
+    return Image.fromarray(img_array, mode='L')
 
 if __name__ == "__main__":
     model = YOLO("yolov8n.pt")
     model.train(
         data="data.yaml",
-        epochs=50,
+        epochs=35,
         imgsz=128,
         batch=8,
         name="mnist_yolo8n"
@@ -102,22 +74,30 @@ if __name__ == "__main__":
     results = model.predict(sample_imgs, conf=0.25, save=False)
 
     NUM_CLASSES = 10
-    cmap = cm.get_cmap("Paired", NUM_CLASSES)
+    cmap = plt.cm.get_cmap("Paired", NUM_CLASSES)
 
     for i, res in enumerate(results):
-
+        # ------------------------------------------------------------------
+        # 1) Load the image in BGR, convert to RGB
         img_bgr = cv2.imread(res.path)
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.imshow(img_rgb)
-        ax.axis("off")
-
-        boxes = res.boxes.xyxy.cpu().numpy()
+        # Pull out boxes, classes, confidences
+        boxes = res.boxes.xyxy.cpu().numpy()        # shape (N, 4)
         classes = res.boxes.cls.cpu().numpy().astype(int)
         confs = res.boxes.conf.cpu().numpy()
 
-        for (x1, y1, x2, y2), cls_id, conf in zip(boxes, classes, confs):
+        # ------------------------------------------------------------------
+        # 2) DRAW & SAVE “BEFORE” IMAGE (just bounding boxes + labels, no digit_transform)
+        # Make a copy so we don’t overwrite img_rgb itself
+        before_img = img_rgb.copy()
+
+        fig1, ax1 = plt.subplots(figsize=(5, 5))
+        ax1.imshow(before_img)
+        ax1.axis("off")
+
+        for (x1f, y1f, x2f, y2f), cls_id, conf in zip(boxes, classes, confs):
+            x1, y1, x2, y2 = int(x1f), int(y1f), int(x2f), int(y2f)
             rgba = cmap(cls_id)
 
             width = x2 - x1
@@ -128,24 +108,70 @@ if __name__ == "__main__":
                 height,
                 linewidth=1.5,
                 edgecolor=rgba,
-                facecolor="none"
+                facecolor="none",
             )
-            ax.add_patch(rect)
+            ax1.add_patch(rect)
 
-            label = f"{int(cls_id)} {conf:.2f}"
-            txt = ax.text(
+            label_txt = f"{int(cls_id)} {conf:.2f}"
+            txt = ax1.text(
                 x1,
                 y1,
-                label,
+                label_txt,
                 fontsize=10,
                 color="white",
                 backgroundcolor=rgba,
                 verticalalignment="bottom",
-                bbox=dict(facecolor=rgba, edgecolor="none", pad=1)
+                bbox=dict(facecolor=rgba, edgecolor="none", pad=1),
             )
             txt.set_path_effects([
                 path_effects.Stroke(linewidth=1.0, foreground="black"),
                 path_effects.Normal()
             ])
 
-        plt.savefig(cache.RESULTS_FOLDER / "YOLO" / f"mnist-yolo-{i}.png", bbox_inches="tight")
+        # Save the “before” image
+        save_path_before = cache.RESULTS_FOLDER / "YOLO" / f"mnist-yolo-{i}.png"
+        plt.savefig(save_path_before, bbox_inches="tight")
+        plt.close(fig1)
+
+        # ------------------------------------------------------------------
+        # 3) APPLY digit_transform ON EACH DETECTED BOX, PASTE INTO img_rgb
+        #    (this modifies img_rgb in-place)
+        for (x1f, y1f, x2f, y2f), cls_id, conf in zip(boxes, classes, confs):
+            x1, y1, x2, y2 = int(x1f), int(y1f), int(x2f), int(y2f)
+
+            # A) Crop out the detected digit from img_rgb (H×W×3)
+            digit_crop_rgb = img_rgb[y1:y2, x1:x2]         
+
+            # B) Convert the crop to a PIL ‘L’ (grayscale) image
+            pil_crop = Image.fromarray(digit_crop_rgb)       # assumes RGB
+            pil_gray = pil_crop.convert("L")                 # single-channel
+
+            # C) Resize to (28,28)
+            pil_28 = pil_gray.resize((28, 28), resample=Image.BILINEAR)
+
+            # D) Apply your TensorFlow‐based digit_transform
+            transformed_28 = digit_transform(pil_28, cls_id)
+            # → expects PIL ‘L’ (28×28), returns PIL ‘L’ (28×28)
+
+            # E) Convert back to NumPy uint8 and replicate to 3 channels
+            arr_28 = np.array(transformed_28, dtype=np.uint8)      # shape (28,28)
+            arr_28_rgb = np.stack([arr_28]*3, axis=-1)              # shape (28,28,3)
+
+            # F) Resize that 3-channel 28×28 up to the original box’s size
+            box_h = y2 - y1
+            box_w = x2 - x1
+            resized_back = cv2.resize(arr_28_rgb, (box_w, box_h), interpolation=cv2.INTER_LINEAR)
+
+            # G) Overwrite that region in img_rgb
+            img_rgb[y1:y2, x1:x2] = resized_back
+
+        # ------------------------------------------------------------------
+        # 4) DRAW & SAVE “AFTER” IMAGE (boxes + labels drawn on top of the transformed img_rgb)
+        fig2, ax2 = plt.subplots(figsize=(5, 5))
+        ax2.imshow(img_rgb)
+        ax2.axis("off")
+
+        # Save the “after” (transformed) image
+        save_path_after = cache.RESULTS_FOLDER / "YOLO" / f"mnist-yolo-transformed-{i}.png"
+        plt.savefig(save_path_after, bbox_inches="tight")
+        plt.close(fig2)
